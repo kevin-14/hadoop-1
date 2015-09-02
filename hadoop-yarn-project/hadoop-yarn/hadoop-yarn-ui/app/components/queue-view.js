@@ -347,7 +347,7 @@ export default Ember.Component.extend({
 	/*
 	 * data = [{label="xx", value=},{...}]
 	 */
-	renderDonutChart: function(data, title, layout) {
+	renderDonutChart: function(data, title, layout, showLabels = false) {
 		console.log(data);
 
 		var g = this.charts.g.append("g")
@@ -364,8 +364,13 @@ export default Ember.Component.extend({
 			.innerRadius(innerRadius)
 			.outerRadius(outerRadius);
 
-		var cx = (layout.x1 + layout.x2) / 2;
+		var cx;
 		var cy = layout.y1 + 50 + layout.margin + outerRadius;
+		if (showLabels) {
+			cx = layout.x1 + layout.margin + outerRadius;
+		} else {
+			cx = (layout.x1 + layout.x2) / 2;
+		}
 
 		var pie = d3.layout.pie();
 		pie.sort(null);
@@ -402,6 +407,35 @@ export default Ember.Component.extend({
 			}.bind(this))
 			.attr("d", arc);
 		this.bindTooltip(path);
+
+		// Show labels
+		if (showLabels) {
+			var lx = layout.x1 + layout.margin + outerRadius * 2 + 30;
+			var squareW = 15;
+			var margin = 10;
+
+			var select = g.selectAll(".rect")
+				.data(data)
+				.enter();
+			select.append("rect")
+				.attr("fill", function(d, i) {
+					return this.colors[i];
+				}.bind(this))
+				.attr("x", lx)
+				.attr("y", function(d, i) {
+					return layout.y1 + 50 + (squareW + margin) * i + layout.margin;
+				})
+				.attr("width", squareW)
+				.attr("height", squareW);
+			select.append("text")
+				.attr("x", lx + squareW + margin)
+				.attr("y", function(d, i) {
+					return layout.y1 + 50 + (squareW + margin) * i + layout.margin + squareW / 2;
+				})
+				.text(function(d) {
+					return d.label;
+				});
+		}
 
 		path.transition()
 			.duration(500)
@@ -482,7 +516,7 @@ export default Ember.Component.extend({
 			}
 		}
 
-		this.renderDonutChart(data, "Children Capacities", layout);
+		this.renderDonutChart(data, "Children Capacities", layout, true);
 	},
 
 	renderChildrenUsedCapacities: function(queue, layout) {
@@ -498,7 +532,7 @@ export default Ember.Component.extend({
 			}
 		}
 
-		this.renderDonutChart(data, "Children Used Capacities", layout);
+		this.renderDonutChart(data, "Children Used Capacities", layout, true);
 	},
 
 	renderLeafQueueUsedCapacities: function(layout) {
@@ -516,7 +550,7 @@ export default Ember.Component.extend({
 		}
 
 		this.renderDonutChart(leafQueueUsedCaps, "LeafQueues Used Capacities",
-			layout);
+			layout, true);
 	},
 
 	renderCharts: function(queueName) {
