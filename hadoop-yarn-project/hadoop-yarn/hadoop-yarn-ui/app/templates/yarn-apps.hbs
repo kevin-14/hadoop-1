@@ -1,0 +1,32 @@
+<table id="apps-table" class="display" cellspacing="0" width="100%">
+	<thead>
+		<tr>
+	        <th>Application ID</th>
+	        <th>Name</th>
+	        <th>User</th>
+	        <th>Queue</th>
+	        <th>State</th>
+	        <th>Start Time</th>
+	        <th>Elapsed Time</th>
+        </tr>
+	</thead>
+	<tbody>
+		{{#each model as |yarnapp|}}
+			<tr>
+                <td>{{yarnapp.id}}</td>
+                <td>{{yarnapp.appName}}</td>
+                <td>{{yarnapp.user}}</td>
+                <td>{{yarnapp.queue}}</td>
+                <td>{{yarnapp.state}}</td>
+                <td>{{yarnapp.startTime}}</td>
+                <td>{{yarnapp.elapsedTime}}</td>
+            </tr>
+		{{/each}}
+	</tbody>
+</table>
+
+<script type="text/javascript">
+    $('#apps-table').DataTable();
+</script>
+{{outlet}}
+
