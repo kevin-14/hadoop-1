@@ -83,23 +83,20 @@ export default Ember.Component.extend({
 			var cc = this.renderQueue(children[i],
 				depth + 1, sequence);
 			g.append("path")
-				.attr("class", "line")
-				.style("stroke", "gray")
+				.attr("class", "queue")
 				.attr("d", linefunction([{
 					x: cx,
 					y: cy
 				}, {
 					x: cc.x - 20,
 					y: cc.y
-				}, cc]))
-				.attr("fill", "none");
+				}, cc]));
 		}
 
 		var circle = g.append("circle")
 			.attr("cx", cx)
 			.attr("cy", cy)
-			.attr("r", 10)
-			.style("fill", this.colors[0])
+			.attr("class", "queue");
 
 		circle.on('mouseover', function() {
 			circle.style("fill", this.colors[1]);
@@ -135,14 +132,13 @@ export default Ember.Component.extend({
 		if (folded) {
 			text = name + " (+)";
 		}
+
 		// print queue's name
 		g.append("text")
 			.attr("x", cx + 30)
 			.attr("y", cy + 5)
 			.text(text)
-			.attr("font-family", "sans-serif")
-			.attr("font-size", "15px")
-			.attr("fill", "gray");
+			.attr("class", "queue");
 
 		return {
 			x: cx,
@@ -187,7 +183,7 @@ export default Ember.Component.extend({
 				.attr("x2", this.canvas.w)
 				.attr("y1", j * gridLen)
 				.attr("y2", j * gridLen)
-				.attr("stroke", "whiteSmoke");
+				.attr("class", "grid")
 
 		}
 	},
@@ -229,19 +225,14 @@ export default Ember.Component.extend({
 			.text(title)
 			.attr("x", (layout.x1 + layout.x2) / 2)
 			.attr("y", layout.y1 + layout.margin + 20)
-			.style("font-size", "30px")
-			.attr("font-family", "sans-serif")
-			.style("text-anchor", "middle")
-			.attr("fill", "Gray");
+			.attr("class", "chart-title");
 
 		bg.append("rect")
 			.attr("x", layout.x1)
 			.attr("y", layout.y1)
 			.attr("width", layout.x2 - layout.x1)
 			.attr("height", layout.y2 - layout.y1)
-			.attr("fill", "none")
-			.attr("stroke", "gray")
-			.attr("stroke-dasharray", "10,10");
+			.attr("class", "chart-frame");
 	},
 
 	bindTooltip: function(d) {
