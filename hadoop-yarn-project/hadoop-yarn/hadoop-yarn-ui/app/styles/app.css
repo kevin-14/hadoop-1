@@ -18,6 +18,12 @@ circle.queue {
   fill: Steelblue;
 }
 
+line.queue-banner {
+  stroke-width: 2;
+  stroke: gray;
+  stroke-dasharray: 10,10;
+}
+
 /*
  background style
  */
