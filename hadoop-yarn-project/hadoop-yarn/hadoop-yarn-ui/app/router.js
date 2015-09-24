@@ -8,6 +8,7 @@ var Router = Ember.Router.extend({
 Router.map(function() {
   this.route('yarnApps');
   this.route('yarnQueues');
+  this.route('clusterOverview');
 });
 
 export default Router;

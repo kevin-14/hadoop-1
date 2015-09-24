@@ -1,0 +1,32 @@
+
+<div class="container">
+  <div class="row">
+    <div class="col-lg-4">
+      <table id="basic-info" class="table">
+        <tbody>
+        {{#each model.clusterInfo as |info|}}
+          <tr>
+              <th>hadoopBuildVersion</th>
+              <th>{{info.hadoopBuildVersion}}</th>
+          </tr>
+        {{/each}}
+        </tbody>
+       </table>
+    </div>
+    <div class="col-lg-4">.col-md-4</div>
+    <div class="col-lg-4">.col-md-4</div>
+  </div>
+
+  <div class="row">
+    <div class="col-lg-4">.col-md-4</div>
+    <div class="col-lg-4">.col-md-4</div>
+    <div class="col-lg-4">.col-md-4</div>
+  </div>
+
+  <div class="row">
+    <div class="col-lg-4">.col-md-4</div>
+    <div class="col-lg-4">.col-md-4</div>
+    <div class="col-lg-4">.col-md-4</div>
+  </div>
+</div>
+{{outlet}}
