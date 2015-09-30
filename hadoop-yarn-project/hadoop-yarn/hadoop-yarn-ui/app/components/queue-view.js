@@ -2,25 +2,11 @@ import Ember from 'ember';
 import ChartUtilsMixin from 'yarn-ui/mixins/charts-utils';
 
 export default Ember.Component.extend(ChartUtilsMixin, {
-	canvas: {
-		svg: undefined,
-		w: 0,
-		h: 0,
-	},
-
 	queues: {
 		data: undefined,
 		foldedQueues: {},
 		selectedQueueCircle: undefined,
 		maxDepth: -1,
-	},
-
-	charts: {
-		svg: undefined,
-		leftBannerLen: 0,
-		h: 0,
-		w: 0,
-		tooltip: undefined
 	},
 
 	queueColors: d3.scale.category20().range(),
@@ -148,33 +134,6 @@ export default Ember.Component.extend(ChartUtilsMixin, {
 		}
 	},
 
-	renderBackground: function() {
-		// render grid
-		var g = this.canvas.svg.append("g")
-			.attr("id", "grid-g");
-
-		var gridLen = 30;
-
-		for (var i = 1; i < 200; i++) {
-			g.append("line")
-				.attr("x1", i * gridLen)
-				.attr("x2", i * gridLen)
-				.attr("y1", 0)
-				.attr("y2", this.canvas.h)
-				.attr("stroke", "whiteSmoke");
-		}
-
-		for (var j = 1; j < 200; j++) {
-			g.append("line")
-				.attr("x1", 0)
-				.attr("x2", this.canvas.w)
-				.attr("y1", j * gridLen)
-				.attr("y2", j * gridLen)
-				.attr("class", "grid")
-
-		}
-	},
-
 	draw: function() {
 		this.queues.data = {};
 		this.get("model")
@@ -225,32 +184,6 @@ export default Ember.Component.extend(ChartUtilsMixin, {
 			.text(function(d) {
 				return d;
 			});
-	},
-
-	getLayout: function(index) {
-		var cMargin = 30; // margin between each charts
-		var perChartWidth = 400;
-		var chartPerRow = Math.min(this.charts.w / (perChartWidth + cMargin), 1);
-
-		var perChartHeight = perChartWidth * 0.75 // 4:3 for each chart
-
-		var row = Math.floor(index / chartPerRow);
-		var col = index % chartPerRow;
-
-		var x1 = (row + 1) * cMargin + row * perChartWidth + this.charts.leftBannerLen;
-		var y1 = (col + 1) * cMargin + col * perChartHeight;
-		var x2 = x1 + perChartWidth;
-		var y2 = y1 + perChartHeight;
-
-		var layout = {
-			x1: x1,
-			y1: y1,
-			x2: x2,
-			y2: y2,
-			id: index,
-			margin: 10
-		};
-		return layout;
 	},
 
 	renderQueueCapacities: function(queue, layout) {
@@ -318,30 +251,8 @@ export default Ember.Component.extend(ChartUtilsMixin, {
 	},
 
 	renderCharts: function(queueName) {
+	  this.charts.leftBannerLen = this.queues.maxDepth * 30 + 100;
 		this.initCharts();
-
-		this.charts.leftBannerLen = this.queues.maxDepth * 30 + 100;
-		this.charts.h = this.canvas.h;
-		this.charts.w = this.canvas.w - this.charts.leftBannerLen;
-
-		// Separate queue map and charts
-		d3.select("#main-svg")
-			.append("line")
-			.attr("x1", this.charts.leftBannerLen)
-			.attr("y1", 0)
-			.attr("x2", this.charts.leftBannerLen)
-			.attr("y2", "100%")
-			.attr("class", "queue-banner");
-
-		var chartG = d3.select("#charts-g");
-		if (chartG) {
-			chartG.remove();
-		}
-
-		// add charts-g
-		this.charts.g = d3.select("#main-svg")
-			.append("g")
-			.attr("id", "charts-g");
 
 		var queue = this.queues.data[queueName];
 		var idx = 0;

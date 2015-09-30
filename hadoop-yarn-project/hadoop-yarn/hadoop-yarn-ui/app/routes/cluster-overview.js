@@ -2,9 +2,10 @@ import Ember from 'ember';
 
 export default Ember.Route.extend({
   model() {
-    return Ember.RSVP.hash({
-      //clusterMetrics : this.store.findAll('ClusterMetrics'),
-      clusterInfo : this.store.findAll('ClusterInfo')
-    });
+    return this.store.findAll('ClusterMetric');
+  },
+
+  afterModel() {
+    this.controllerFor("ClusterOverview").set("loading", false);
   }
 });

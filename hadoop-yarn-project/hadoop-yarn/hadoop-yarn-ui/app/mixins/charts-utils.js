@@ -1,6 +1,20 @@
 import Ember from 'ember';
 
 export default Ember.Mixin.create({
+  canvas: {
+    svg: undefined,
+    w: 0,
+    h: 0,
+  },
+
+  charts: {
+    svg: undefined,
+    leftBannerLen: 0,
+    h: 0,
+    w: 0,
+    tooltip: undefined
+  },
+  
   tooltip : undefined,
   colors: d3.scale.category10().range(),
 
@@ -10,6 +24,30 @@ export default Ember.Mixin.create({
       .attr("class", "tooltip")
       .attr("id", "chart-tooltip")
       .style("opacity", 0);
+
+    this.charts.h = this.canvas.h;
+    this.charts.w = this.canvas.w - this.charts.leftBannerLen;
+
+    // Separate queue map and charts
+    if (this.charts.leftBannerLen > 0) {
+      d3.select("#main-svg")
+        .append("line")
+        .attr("x1", this.charts.leftBannerLen)
+        .attr("y1", 0)
+        .attr("x2", this.charts.leftBannerLen)
+        .attr("y2", "100%")
+        .attr("class", "chart-leftbanner");
+    }
+
+    var chartG = d3.select("#charts-g");
+    if (chartG) {
+      chartG.remove();
+    }
+
+    // add charts-g
+    this.charts.g = d3.select("#main-svg")
+      .append("g")
+      .attr("id", "charts-g");
   },
 
   renderTitleAndBG: function(g, title, layout) {
@@ -49,6 +87,33 @@ export default Ember.Mixin.create({
       .on("mouseout", function(d) {
         this.tooltip.style("opacity", 0);
       }.bind(this));
+  },
+
+  renderBackground: function() {
+    // render grid
+    var g = this.canvas.svg.append("g")
+      .attr("id", "grid-g");
+
+    var gridLen = 30;
+
+    for (var i = 1; i < 200; i++) {
+      g.append("line")
+        .attr("x1", i * gridLen)
+        .attr("x2", i * gridLen)
+        .attr("y1", 0)
+        .attr("y2", this.canvas.h)
+        .attr("stroke", "whiteSmoke");
+    }
+
+    for (var j = 1; j < 200; j++) {
+      g.append("line")
+        .attr("x1", 0)
+        .attr("x2", this.canvas.w)
+        .attr("y1", j * gridLen)
+        .attr("y2", j * gridLen)
+        .attr("class", "grid")
+
+    }
   },
 
   // data: 
@@ -131,8 +196,21 @@ export default Ember.Mixin.create({
   /*
    * data = [{label="xx", value=},{...}]
    */
-  renderDonutChart: function(chartsG, data, title, layout, showLabels = false) {
-    console.log(data);
+  renderDonutChart: function(chartsG, data, title, layout, showLabels = false, 
+    middleLabel = "Total", middleValue = undefined) {
+
+    var total = 0;
+    var allZero = true;
+    for (var i = 0; i < data.length; i++) {
+      total += data[i].value;
+      if (data[i].value > 1e-6) {
+        allZero = false;
+      }
+    }
+
+    if (!middleValue) {
+      middleValue = total;
+    }
 
     var g = chartsG.append("g")
       .attr("id", "chart-" + layout.id);
@@ -160,7 +238,8 @@ export default Ember.Mixin.create({
     pie.sort(null);
     pie.value(function(d) {
       var v = d.value;
-      v = Math.max(v, 1e-3);
+      // make sure it > 0
+      v = Math.max(v, 1e-6);
       return v;
     });
 
@@ -187,9 +266,23 @@ export default Ember.Mixin.create({
     //Draw arc paths
     var path = arcs.append("path")
       .attr("fill", function(d, i) {
-        return this.colors[i];
+        if (d.value > 1e-6) {
+          return this.colors[i];
+        } else {
+          return "white";
+        }
       }.bind(this))
-      .attr("d", arc);
+      .attr("d", arc)
+      .attr("stroke", function(d, i) {
+        if (allZero) {
+          return this.colors[i];
+        }
+      }.bind(this))
+      .attr("stroke-dasharray", function(d, i) {
+        if (d.value <= 1e-6) {
+          return "10,10";
+        }
+      }.bind(this));
     this.bindTooltip(path);
 
     // Show labels
@@ -217,12 +310,47 @@ export default Ember.Mixin.create({
           return layout.y1 + 50 + (squareW + margin) * i + layout.margin + squareW / 2;
         })
         .text(function(d) {
-          return d.label;
+          return d.label + ' = ' + d.value;
         });
+    }
+
+    if (middleLabel) {
+      var highLightColor = this.colors[0];
+      g.append("text").text(middleLabel).attr("x", cx).attr("y", cy - 20).
+        attr("class", "donut-highlight-text").attr("fill", highLightColor);
+      g.append("text").text(middleValue).attr("x", cx).attr("y", cy + 30).
+        attr("class", "donut-highlight-text").attr("fill", highLightColor).
+        style("font-size", "40px");
     }
 
     path.transition()
       .duration(500)
       .attrTween('d', tweenPie);
+  },
+
+  getLayout: function(index) {
+    var cMargin = 30; // margin between each charts
+    var perChartWidth = 400;
+    var chartPerRow = Math.min(this.charts.w / (perChartWidth + cMargin), 1);
+
+    var perChartHeight = perChartWidth * 0.75 // 4:3 for each chart
+
+    var row = Math.floor(index / chartPerRow);
+    var col = index % chartPerRow;
+
+    var x1 = (row + 1) * cMargin + row * perChartWidth + this.charts.leftBannerLen;
+    var y1 = (col + 1) * cMargin + col * perChartHeight;
+    var x2 = x1 + perChartWidth;
+    var y2 = y1 + perChartHeight;
+
+    var layout = {
+      x1: x1,
+      y1: y1,
+      x2: x2,
+      y2: y2,
+      id: index,
+      margin: 10
+    };
+    return layout;
   },
 });

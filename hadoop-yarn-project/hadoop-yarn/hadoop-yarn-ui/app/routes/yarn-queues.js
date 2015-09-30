@@ -6,8 +6,6 @@ export default Ember.Route.extend({
   },
 
   afterModel() {
-  	setTimeout(function() {
-  		this.controllerFor("yarnQueues").set("loading", false);
-  	}.bind(this), 500);
+    this.controllerFor("yarnQueues").set("loading", false);
   }
 });
