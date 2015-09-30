@@ -140,7 +140,7 @@ export default Ember.Mixin.create({
     var singleBarHeight = 30;
 
     // 50 is for text
-    var maxBarWidth = layout.x2 - layout.x1 - 2 * layout.margin - textWidth;
+    var maxBarWidth = layout.x2 - layout.x1 - 2 * layout.margin - 2 * textWidth;
 
     // 30 is for title
     var maxBarsHeight = layout.y2 - layout.y1 - 2 * layout.margin - 30;
@@ -191,6 +191,20 @@ export default Ember.Mixin.create({
         w = Math.max(w, 3);
         return w;
       });
+
+    // show bar value
+    for (var i = 0; i < data.length; i++) {
+      g.append("text")
+        .text(
+          function() {
+            return data[i].value;
+          })
+        .attr("y", function() {
+          return layout.y1 + singleBarHeight / 2 + layout.margin + (gap +
+            singleBarHeight) * i + 30;
+        })
+        .attr("x", layout.x1 + layout.margin + textWidth + 15 + xScaler(data[i].value));
+    }
   },
 
   /*
@@ -331,15 +345,15 @@ export default Ember.Mixin.create({
   getLayout: function(index) {
     var cMargin = 30; // margin between each charts
     var perChartWidth = 400;
-    var chartPerRow = Math.min(this.charts.w / (perChartWidth + cMargin), 1);
+    var chartPerRow = Math.max(Math.floor(this.charts.w / (perChartWidth + cMargin)), 1);
 
     var perChartHeight = perChartWidth * 0.75 // 4:3 for each chart
 
     var row = Math.floor(index / chartPerRow);
     var col = index % chartPerRow;
 
-    var x1 = (row + 1) * cMargin + row * perChartWidth + this.charts.leftBannerLen;
-    var y1 = (col + 1) * cMargin + col * perChartHeight;
+    var x1 = (col + 1) * cMargin + col * perChartWidth + this.charts.leftBannerLen;
+    var y1 = (row + 1) * cMargin + row * perChartHeight;
     var x2 = x1 + perChartWidth;
     var y2 = y1 + perChartHeight;
 

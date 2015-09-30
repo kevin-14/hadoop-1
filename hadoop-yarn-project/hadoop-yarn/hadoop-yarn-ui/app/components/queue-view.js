@@ -147,7 +147,7 @@ export default Ember.Component.extend(ChartUtilsMixin, {
 			.getBoundingClientRect();
 		this.canvas.w = bbox.width;
 		this.canvas.h = Math.max(Object.keys(this.queues.data)
-			.length * 35, this.canvas.w * 9 / 16);
+			.length * 35, 1500);
 
 		this.canvas.svg = d3.select("#main-container")
 			.append("svg")
