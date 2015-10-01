@@ -37,8 +37,12 @@ export default DS.JSONAPISerializer.extend({
       return timeStr;
     },
 
-    normalizeSingleResponse(store, primaryModelClass, payload, id,
+    internalNormalizeSingleResponse(store, primaryModelClass, payload, id,
       requestType) {
+      if (payload.app) {
+        payload = payload.app;  
+      }
+      
       var fixedPayload = {
         id: id,
         type: primaryModelClass.modelName, // yarn-app
@@ -52,8 +56,14 @@ export default DS.JSONAPISerializer.extend({
         }
       };
 
-      return this._super(store, primaryModelClass, fixedPayload, id,
-        requestType);
+      return fixedPayload;
+    },
+
+    normalizeSingleResponse(store, primaryModelClass, payload, id,
+      requestType) {
+      var p = this.internalNormalizeSingleResponse(store, 
+        primaryModelClass, payload, id, requestType);
+      return { data: p };
     },
 
     normalizeArrayResponse(store, primaryModelClass, payload, id,
@@ -64,7 +74,7 @@ export default DS.JSONAPISerializer.extend({
       // payload has apps : { app: [ {},{},{} ]  }
       // need some error handling for ex apps or app may not be defined.
       normalizedArrayResponse.data = payload.apps.app.map(singleApp => {
-        return this.normalizeSingleResponse(store, primaryModelClass,
+        return this.internalNormalizeSingleResponse(store, primaryModelClass,
           singleApp, singleApp.id, requestType);
       }, this);
       return normalizedArrayResponse;

@@ -13,7 +13,7 @@
 	<tbody>
 		{{#each model as |yarnapp|}}
 			<tr>
-                <td>{{yarnapp.id}}</td>
+                <td><a href="yarnApp/{{yarnapp.id}}">{{yarnapp.id}}</a></td>
                 <td>{{yarnapp.appName}}</td>
                 <td>{{yarnapp.user}}</td>
                 <td>{{yarnapp.queue}}</td>
@@ -25,8 +25,6 @@
 	</tbody>
 </table>
 
-<script type="text/javascript">
-    $('#apps-table').DataTable();
-</script>
+{{simple-table table-id="apps-table"}}
 {{outlet}}
 

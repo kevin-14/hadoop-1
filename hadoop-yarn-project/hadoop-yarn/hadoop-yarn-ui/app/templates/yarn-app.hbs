@@ -1,0 +1,53 @@
+<table id="app-table" class="display" cellspacing="0" width="100%">
+  <thead>
+    <tr>
+          <th>Application ID</th>
+          <th>Name</th>
+          <th>User</th>
+          <th>Queue</th>
+          <th>State</th>
+          <th>Start Time</th>
+          <th>Elapsed Time</th>
+        </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><a href="model/{{model.app.id}}">{{model.app.id}}</a></td>
+        <td>{{model.app.appName}}</td>
+        <td>{{model.app.user}}</td>
+        <td>{{model.app.queue}}</td>
+        <td>{{model.app.state}}</td>
+        <td>{{model.app.startTime}}</td>
+        <td>{{model.app.elapsedTime}}</td>
+      </tr>
+  </tbody>
+</table>
+
+<table id="app-attempt-table" class="display" cellspacing="0" width="100%">
+  <thead>
+    <tr>
+          <th>Start Time</th>
+          <th>Master ContainerId</th>
+          <th>Node Http Address</th>
+          <th>Node Id</th>
+          <th>Logs Link</th>
+        </tr>
+  </thead>
+  <tbody>
+    {{#each model.attempts as |attempt|}}
+      <tr>
+        <td>{{attempt.startTime}}</td>
+        <td>{{attempt.containerId}}</td>
+        <td>{{attempt.nodeHttpAddress}}</td>
+        <td>{{attempt.nodeId}}</td>
+        <td><a href={{attempt.logsLink}}>link</a></td>
+      </tr>
+    {{/each}}
+  </tbody>
+</table>
+
+{{simple-table table-id="app-table"}}
+{{simple-table table-id="app-attempt-table"}}
+
+
+{{outlet}}
