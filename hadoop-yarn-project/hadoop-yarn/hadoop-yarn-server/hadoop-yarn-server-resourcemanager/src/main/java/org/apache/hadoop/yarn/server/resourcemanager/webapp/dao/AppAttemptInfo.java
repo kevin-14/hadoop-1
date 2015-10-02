@@ -41,6 +41,7 @@ public class AppAttemptInfo {
   protected String nodeId;
   protected String logsLink;
   protected String blacklistedNodes;
+  protected String appAttemptId;
 
   public AppAttemptInfo() {
   }
@@ -75,6 +76,7 @@ public class AppAttemptInfo {
           }
         }
       }
+      this.appAttemptId = attempt.getAppAttemptId().toString();
     }
   }
 
