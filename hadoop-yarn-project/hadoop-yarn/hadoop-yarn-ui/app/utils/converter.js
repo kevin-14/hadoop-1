@@ -12,5 +12,10 @@ export default {
       return str;
     }
     return '0'.repeat(toLen - str.length) + str;
+  },
+  resourceToString: function(mem, cpu) {
+    mem = Math.max(0, mem);
+    cpu = Math.max(0, cpu);
+    return mem + " MBs, " + cpu + " VCores";
   }
 }

@@ -53,6 +53,24 @@ export default DS.JSONAPISerializer.extend({
           state: payload.state,
           startTime: this.normalizeStartTime(payload.startedTime),
           elapsedTime: this.normalizeElapsedTime(payload.elapsedTime),
+          finalStatus: payload.finalStatus,
+          progress: payload.progress,
+          diagnostics: payload.diagnostics,
+          amContainerLogs: payload.amContainerLogs,
+          amHostHttpAddress: payload.amHostHttpAddress,
+          logAggregationStatus: payload.logAggregationStatus,
+          unmanagedApplication: payload.unmanagedApplication,
+          amNodeLabelExpression: payload.amNodeLabelExpression,
+          priority: payload.priority,
+          allocatedMB: payload.allocatedMB,
+          allocatedVCores: payload.allocatedVCores,
+          runningContainers: payload.runningContainers,
+          memorySeconds: payload.memorySeconds,
+          vcoreSeconds: payload.vcoreSeconds,
+          preemptedResourceMB: payload.preemptedResourceMB,
+          preemptedResourceVCores: payload.preemptedResourceVCores,
+          numNonAMContainerPreempted: payload.numNonAMContainerPreempted,
+          numAMContainerPreempted: payload.numAMContainerPreempted
         }
       };
 
