@@ -1,8 +1,13 @@
 <div class="container-fluid">
   <!-- app table -->
   <div class="row">
-    <div class="col-md-12">
-      {{app-table table-id="app-table" app=model.app}}
+    <div class="col-md-12 container-fluid">
+      <div class="panel panel-default">
+          <div class="panel-heading">
+            Application Basic Information
+          </div>
+          {{app-table table-id="app-table" app=model.app}}
+       </div>
     </div>
   </div>
 
@@ -116,7 +121,7 @@
                 <tr>
                   <td>{{attempt.startTime}}</td>
                   <td>{{attempt.containerId}}</td>
-                  <td>{{attempt.nodeHttpAddress}}</td>
+                  <td><a href={{attempt.nodeHttpAddress}}>{{attempt.nodeHttpAddress}}</a></td>
                   <td>{{attempt.nodeId}}</td>
                   <td><a href={{attempt.logsLink}}>link</a></td>
                 </tr>
@@ -126,7 +131,15 @@
         </div>
     </div>
   </div>
+
+    <!-- app table -->
+  <div class="row">
+    <div class="col-md-12 container-fluid" id="attempt-timeline-div">
+       {{timeline-view parent-id="attempt-timeline-div" my-id="timeline-view" height="100%" model=model.attempts}}
+    </div>
+  </div>
 </div>
 
 {{simple-table table-id="app-attempt-table" paging=false bFilter=false}}
+
 {{outlet}}

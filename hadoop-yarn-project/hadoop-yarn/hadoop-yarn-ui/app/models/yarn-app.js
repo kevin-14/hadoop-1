@@ -9,6 +9,7 @@ export default DS.Model.extend({
 	startTime: DS.attr('string'),
 	elapsedTime: DS.attr('string'),
   finalStatus: DS.attr('string'),
+  finishedTime: DS.attr('finishedTime'),
   progress: DS.attr('number'),
   diagnostics: DS.attr('string'),
   amContainerLogs: DS.attr('string'),

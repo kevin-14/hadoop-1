@@ -8,6 +8,7 @@ module.exports = function(defaults) {
 
   app.import("bower_components/datatables/media/css/jquery.dataTables.min.css");
   app.import("bower_components/datatables/media/js/jquery.dataTables.min.js");
+  app.import("bower_components/momentjs/min/moment.min.js");
 
   // Use `app.import` to add additional libraries to the generated
   // output files.
