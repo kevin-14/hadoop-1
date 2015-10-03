@@ -36,6 +36,7 @@ public class AppAttemptInfo {
 
   protected int id;
   protected long startTime;
+  protected long finishedTime;
   protected String containerId;
   protected String nodeHttpAddress;
   protected String nodeId;
@@ -57,6 +58,7 @@ public class AppAttemptInfo {
     if (attempt != null) {
       this.id = attempt.getAppAttemptId().getAttemptId();
       this.startTime = attempt.getStartTime();
+      this.finishedTime = attempt.getFinishTime();
       Container masterContainer = attempt.getMasterContainer();
       if (masterContainer != null) {
         this.containerId = masterContainer.getId().toString();
@@ -86,6 +88,10 @@ public class AppAttemptInfo {
 
   public long getStartTime() {
     return this.startTime;
+  }
+
+  public long getFinishedTime() {
+    return this.finishedTime;
   }
 
   public String getNodeHttpAddress() {
