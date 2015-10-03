@@ -21,5 +21,9 @@ export default DS.Model.extend({
   shortAppAttemptId: function() {
     return "attempt_" + 
            parseInt(Converter.containerIdToAttemptId(this.get("containerId")).split("_")[3]);
+  }.property("containerId"),
+
+  appAttemptId: function() {
+    return Converter.containerIdToAttemptId(this.get("containerId"));
   }.property("containerId")
 });

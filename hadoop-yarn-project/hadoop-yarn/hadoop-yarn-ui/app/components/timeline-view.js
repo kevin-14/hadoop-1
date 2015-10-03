@@ -1,4 +1,5 @@
 import Ember from 'ember';
+import Converter from 'yarn-ui/utils/converter';
 
 export default Ember.Component.extend({
   canvas: {
@@ -11,7 +12,13 @@ export default Ember.Component.extend({
   clusterMetrics: undefined,
   modelArr: [],
   colors: d3.scale.category10().range(),
-
+  _selected: undefined,
+  selected: function() {
+    if (_selected) {
+      return _selected;
+    }
+    return modelArr[0];
+  }.property(),
   draw: function(start, end) {
     // get w/h of the svg
     var bbox = d3.select("#" + this.get("parent-id"))
@@ -45,13 +52,43 @@ export default Ember.Component.extend({
       .domain([start, end])
       .range([0, this.canvas.w - 2 * border - textWidth]);
 
+    /*
+     * Render frame of timeline view
+     */
     this.canvas.svg.append("line")
       .attr("x1", border + textWidth)
-      .attr("y1", border)
+      .attr("y1", border - 5)
       .attr("x2", this.canvas.w - border)
-      .attr("y2", border)
-      .attr("class", "grid")
-      .attr("fill", "gray");
+      .attr("y2", border - 5)
+      .attr("class", "chart");
+
+    this.canvas.svg.append("line")
+      .attr("x1", border + textWidth)
+      .attr("y1", border - 10)
+      .attr("x2", border + textWidth)
+      .attr("y2", border - 5)
+      .attr("class", "chart");
+
+    this.canvas.svg.append("line")
+      .attr("x1", this.canvas.w - border)
+      .attr("y1", border - 10)
+      .attr("x2", this.canvas.w - border)
+      .attr("y2", border - 5)
+      .attr("class", "chart");
+
+    this.canvas.svg.append("text")
+        .text(Converter.timeStampToDate(start))
+        .attr("y", border - 15)
+        .attr("x", border + textWidth)
+        .attr("class", "bar-chart-text")
+        .attr("text-anchor", "left");
+
+    this.canvas.svg.append("text")
+        .text(Converter.timeStampToDate(end))
+        .attr("y", border - 15)
+        .attr("x", this.canvas.w - border)
+        .attr("class", "bar-chart-text")
+        .attr("text-anchor", "end");
 
     // show bar
     var bar = this.canvas.svg.selectAll("bars")
@@ -73,6 +110,11 @@ export default Ember.Component.extend({
         finishedTs = finishedTs > 0 ? finishedTs : xScaler(end);
         return finishedTs - xScaler(d.get("startTs"));
       });
+    bar.on("click", function(d) {
+      this._selected = d;
+      console.log(this._selected);
+    }.bind(this));
+
 
     // show bar texts
     for (var i = 0; i < this.modelArr.length; i++) {
