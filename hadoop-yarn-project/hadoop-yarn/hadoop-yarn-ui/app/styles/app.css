@@ -74,6 +74,13 @@ line.chart-leftbanner {
   stroke-dasharray: 10,10;
 }
 
+text.bar-chart-text {
+  font-size: 8px;
+  font-family: sans-serif;
+  vertical-align: middle;
+  fill: Gray;;
+}
+
 div.tooltip {   
   position: absolute;           
   text-align: center;

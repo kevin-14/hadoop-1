@@ -134,8 +134,27 @@
 
     <!-- app table -->
   <div class="row">
-    <div class="col-md-12 container-fluid" id="attempt-timeline-div">
-       {{timeline-view parent-id="attempt-timeline-div" my-id="timeline-view" height="100%" model=model.attempts}}
+    <div class="col-md-8 container-fluid" id="attempt-timeline-div">
+       {{timeline-view parent-id="attempt-timeline-div" my-id="timeline-view" height="100%" model=model.attempts label="shortAppAttemptId"}}
+    </div>
+
+        <!-- diag info -->
+    <div class="col-md-4 container-fluid">
+      {{#if model.app.isFailed}}
+        <div class="panel panel-danger">
+          <div class="panel-heading">
+            Diagnostics
+          </div>
+          <div class="panel-body">{{model.app.diagnostics}}</div>
+        </div>
+      {{else}}
+        <div class="panel panel-default">
+          <div class="panel-body">
+            Diagnostics
+          </div>
+          <div class="panel-footer">{{model.app.diagnostics}}</div>
+        </div>
+      {{/if}}
     </div>
   </div>
 </div>
