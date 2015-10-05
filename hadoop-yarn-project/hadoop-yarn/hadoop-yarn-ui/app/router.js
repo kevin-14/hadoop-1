@@ -9,7 +9,8 @@ Router.map(function() {
   this.route('yarnApps');
   this.route('yarnQueues');
   this.route('clusterOverview');
-  this.route('yarnApp', { path: '/yarnApp/:app_id' })
+  this.route('yarnApp', { path: '/yarnApp/:app_id' });
+  this.route('yarnAppAttempt', { path: '/yarnAppAttempt/:app_attempt_id'});
 });
 
 export default Router;

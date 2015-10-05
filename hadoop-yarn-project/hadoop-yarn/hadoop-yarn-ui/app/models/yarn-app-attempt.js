@@ -25,5 +25,18 @@ export default DS.Model.extend({
 
   appAttemptId: function() {
     return Converter.containerIdToAttemptId(this.get("containerId"));
-  }.property("containerId")
+  }.property("containerId"),
+
+  elapsedTime: function() {
+    var elapsedMs = this.get("finishedTs") - this.get("startTs");
+    if (elapsedMs <= 0) {
+      elapsedMs = new Date().getTime() - this.get("startTs");
+    }
+
+    return Converter.msToElapsedTime(elapsedMs);
+  }.property(),
+
+  tooltipLabel: function() {
+    return "Id:" + this.get("appAttemptId") + " ElapsedTime:" + this.get("elapsedTime");
+  }.property(),
 });

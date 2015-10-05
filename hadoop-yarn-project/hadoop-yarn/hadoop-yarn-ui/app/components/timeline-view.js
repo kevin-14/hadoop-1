@@ -13,12 +13,32 @@ export default Ember.Component.extend({
   modelArr: [],
   colors: d3.scale.category10().range(),
   _selected: undefined,
+
   selected: function() {
-    if (_selected) {
-      return _selected;
-    }
-    return modelArr[0];
+    return this._selected;
   }.property(),
+
+  tableComponentName: function() {
+    return "app-attempt-table";
+  }.property(),
+
+  setSelected: function(d) {
+    if (this._selected == d) {
+      return;
+    }
+
+    // restore color
+    if (this._selected) {
+      var dom = d3.select("#timeline-bar-" + this._selected.get("id"));
+      dom.attr("fill", this.colors[0]);
+    }
+
+    this._selected = d;
+    this.set("selected", d);
+    dom = d3.select("#timeline-bar-" + d.get("id"));
+    dom.attr("fill", this.colors[1]);
+  },
+
   draw: function(start, end) {
     // get w/h of the svg
     var bbox = d3.select("#" + this.get("parent-id"))
@@ -103,17 +123,21 @@ export default Ember.Component.extend({
       })
       .attr("height", singleBarHeight)
       .attr("fill", function(d, i) {
-        return this.colors[i];
+        return this.colors[0];
       }.bind(this))
       .attr("width", function(d, i) {
         var finishedTs = xScaler(d.get("finishedTs"));
         finishedTs = finishedTs > 0 ? finishedTs : xScaler(end);
         return finishedTs - xScaler(d.get("startTs"));
+      })
+      .attr("id", function(d, i) {
+        return "timeline-bar-" + d.get("id");
       });
     bar.on("click", function(d) {
-      this._selected = d;
-      console.log(this._selected);
+      this.setSelected(d);
     }.bind(this));
+
+    this.bindTooltip(bar);
 
 
     // show bar texts
@@ -126,7 +150,35 @@ export default Ember.Component.extend({
     }
   },
 
+  bindTooltip: function(d) {
+    d.on("mouseover", function(d) {
+        this.tooltip
+          .style("left", (d3.event.pageX) + "px")
+          .style("top", (d3.event.pageY - 28) + "px");
+      }.bind(this))
+      .on("mousemove", function(d) {
+        this.tooltip.style("opacity", .9);
+        this.tooltip.html(d.get("tooltipLabel"))
+          .style("left", (d3.event.pageX) + "px")
+          .style("top", (d3.event.pageY - 28) + "px");
+      }.bind(this))
+      .on("mouseout", function(d) {
+        this.tooltip.style("opacity", 0);
+      }.bind(this));
+  },
+
+  initTooltip: function() {
+    this.tooltip = d3.select("body")
+      .append("div")
+      .attr("class", "tooltip")
+      .attr("id", "chart-tooltip")
+      .style("opacity", 0);
+  },
+
   didInsertElement: function() {
+    // init tooltip
+    this.initTooltip();
+
     // init model
     this.get("model").forEach(function(o) {
       this.modelArr.push(o);
@@ -151,5 +203,6 @@ export default Ember.Component.extend({
     }
 
     this.draw(begin, end);
+    this.setSelected(this.modelArr[0]);
   },
 });

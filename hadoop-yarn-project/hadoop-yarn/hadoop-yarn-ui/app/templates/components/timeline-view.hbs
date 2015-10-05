@@ -1,0 +1,26 @@
+<div class="col-md-12 container-fluid">
+  <div class="panel panel-default">
+    <div class="panel-heading">
+      Application Attempts
+    </div>
+    <div class="panel-body">
+      <div class="col-md-8 container-fluid" id="attempt-timeline-div">
+      </div>
+
+      <!-- diag info -->
+      <div class="col-md-4 container-fluid">
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            {{selected.id}}
+          </div>
+
+          {{#if attemptModel}}
+            {{app-attempt-table attempt=selected}}
+          {{/if}}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{{outlet}}
