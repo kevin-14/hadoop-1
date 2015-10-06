@@ -1,4 +1,5 @@
 import DS from 'ember-data';
+import Converter from 'yarn-ui/utils/converter';
 
 export default DS.JSONAPIAdapter.extend({
   headers: {
@@ -10,6 +11,12 @@ export default DS.JSONAPIAdapter.extend({
   urlForQuery(query, modelName) {
     var url = this._buildURL();
     return url + '/apps/' + query.appId + "/appattempts";
+  },
+
+  urlForFindRecord(id, modelName, snapshot) {
+    var url = this._buildURL();
+    return url + '/apps/' + 
+           Converter.attemptIdToAppId(id) + "/appattempts/" + id;
   },
 
   ajax(url, method, hash) {

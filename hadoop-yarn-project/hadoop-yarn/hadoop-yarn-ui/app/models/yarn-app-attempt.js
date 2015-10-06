@@ -23,20 +23,22 @@ export default DS.Model.extend({
            parseInt(Converter.containerIdToAttemptId(this.get("containerId")).split("_")[3]);
   }.property("containerId"),
 
-  appAttemptId: function() {
-    return Converter.containerIdToAttemptId(this.get("containerId"));
-  }.property("containerId"),
-
   elapsedTime: function() {
     var elapsedMs = this.get("finishedTs") - this.get("startTs");
     if (elapsedMs <= 0) {
-      elapsedMs = new Date().getTime() - this.get("startTs");
+      elapsedMs = Date.now() - this.get("startTs");
     }
 
     return Converter.msToElapsedTime(elapsedMs);
   }.property(),
 
   tooltipLabel: function() {
-    return "Id:" + this.get("appAttemptId") + " ElapsedTime:" + this.get("elapsedTime");
+    return "<p>Id:" + this.get("id") + 
+           "</p><p>ElapsedTime:" + 
+           String(this.get("elapsedTime")) + "</p>";
+  }.property(),
+
+  link: function() {
+    return "/yarnAppAttempt/" + this.get("id");
   }.property(),
 });

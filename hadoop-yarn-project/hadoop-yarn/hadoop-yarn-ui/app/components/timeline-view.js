@@ -198,8 +198,8 @@ export default Ember.Component.extend({
         end = ts;
       }
     }
-    if (end <= 0) {
-      end = new Date().getTime();
+    if (end < begin) {
+      end = Date.now();
     }
 
     this.draw(begin, end);

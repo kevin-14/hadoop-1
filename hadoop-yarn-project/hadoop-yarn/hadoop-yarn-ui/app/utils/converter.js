@@ -63,6 +63,8 @@ export default {
   },
   timeStampToDate: function(timeStamp) {
     var dateTimeString = moment(timeStamp).format("YYYY/MM/DD HH:mm:ss");
+    console.log(timeStamp);
+    console.log(dateTimeString);
     return dateTimeString;
   },
   dateToTimeStamp: function(date) {

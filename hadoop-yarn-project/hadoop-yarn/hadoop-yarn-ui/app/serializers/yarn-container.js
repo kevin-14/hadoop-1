@@ -5,21 +5,21 @@ export default DS.JSONAPISerializer.extend({
     internalNormalizeSingleResponse(store, primaryModelClass, payload, id,
       requestType) {
       
-      if (payload.appAttempt) {
-        payload = payload.appAttempt;  
-      }
-      
       var fixedPayload = {
-        id: payload.appAttemptId,
+        id: payload.containerId,
         type: primaryModelClass.modelName, // yarn-app
         attributes: {
-          startTime: Converter.timeStampToDate(payload.startTime),
+          allocatedMB: payload.allocatedMB,
+          allocatedVCores: payload.allocatedVCores,
+          assignedNodeId: payload.assignedNodeId,
+          priority: payload.priority,
+          startedTime: Converter.timeStampToDate(payload.startedTime),
           finishedTime: Converter.timeStampToDate(payload.finishedTime),
-          containerId: payload.containerId,
-          nodeHttpAddress: payload.nodeHttpAddress,
-          nodeId: payload.nodeId,
-          state: payload.nodeId,
-          logsLink: payload.logsLink
+          elapsedTime: payload.elapsedTime,
+          logUrl: payload.logUrl,
+          containerExitStatus: payload.containerExitStatus,
+          containerState: payload.containerState,
+          nodeHttpAddress: payload.nodeHttpAddress
         }
       };
 
@@ -35,14 +35,15 @@ export default DS.JSONAPISerializer.extend({
 
     normalizeArrayResponse(store, primaryModelClass, payload, id,
       requestType) {
+      console.log(payload);
       // return expected is { data: [ {}, {} ] }
       var normalizedArrayResponse = {};
 
       // payload has apps : { app: [ {},{},{} ]  }
       // need some error handling for ex apps or app may not be defined.
-      normalizedArrayResponse.data = payload.appAttempts.appAttempt.map(singleApp => {
+      normalizedArrayResponse.data = payload.container.map(singleContainer => {
         return this.internalNormalizeSingleResponse(store, primaryModelClass,
-          singleApp, singleApp.id, requestType);
+          singleContainer, singleContainer.id, requestType);
       }, this);
       return normalizedArrayResponse;
     }

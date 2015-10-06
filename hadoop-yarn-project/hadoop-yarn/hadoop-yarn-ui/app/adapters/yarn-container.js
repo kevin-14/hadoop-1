@@ -10,8 +10,10 @@ export default DS.JSONAPIAdapter.extend({
 
   urlForQuery(query, modelName) {
     var url = this._buildURL();
-    return url + '/apps/' + Converter.attemptIdToAppId(query.appAttemptId) 
-               + "/appattempts/" + query.appAttemptId + "/containers";
+    url = url + '/apps/' + Converter.attemptIdToAppId(query.app_attempt_id) 
+               + "/appattempts/" + query.app_attempt_id + "/containers";
+    console.log(url);
+    return url;
   },
 
   ajax(url, method, hash) {

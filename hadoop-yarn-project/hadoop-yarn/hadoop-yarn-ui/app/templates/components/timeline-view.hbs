@@ -1,19 +1,24 @@
 <div class="col-md-12 container-fluid">
   <div class="panel panel-default">
     <div class="panel-heading">
-      Application Attempts
+      {{#if attemptModel}}
+        Application Attempts
+      {{/if}}
     </div>
     <div class="panel-body">
-      <div class="col-md-8 container-fluid" id="attempt-timeline-div">
+      <div class="col-md-8 container-fluid" id={{parent-id}}>
       </div>
 
       <!-- diag info -->
       <div class="col-md-4 container-fluid">
         <div class="panel panel-default">
           <div class="panel-heading">
-            {{selected.id}}
+            {{#if selected.link}}
+              <a href={{selected.link}}>{{selected.id}}</a>
+            {{else}}
+              {{selected.id}}
+            {{/if}}
           </div>
-
           {{#if attemptModel}}
             {{app-attempt-table attempt=selected}}
           {{/if}}
