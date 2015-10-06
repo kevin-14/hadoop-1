@@ -62,15 +62,12 @@ export default {
     return total * 1000;
   },
   timeStampToDate: function(timeStamp) {
-    var dateTimeString = moment(timeStamp).format("YYYY/MM/DD HH:mm:ss");
-    console.log(timeStamp);
-    console.log(dateTimeString);
+    var dateTimeString = moment(parseInt(timeStamp)).format("YYYY/MM/DD HH:mm:ss");
     return dateTimeString;
   },
   dateToTimeStamp: function(date) {
     if (date) {
       var ts = moment(date, "YYYY/MM/DD HH:mm:ss").valueOf();
-      console.log(date + ts);
       return ts;
     }
   }
