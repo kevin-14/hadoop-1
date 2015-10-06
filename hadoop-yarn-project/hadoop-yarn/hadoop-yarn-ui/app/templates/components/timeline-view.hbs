@@ -3,6 +3,8 @@
     <div class="panel-heading">
       {{#if attemptModel}}
         Application Attempts
+      {{else}}
+        Containers
       {{/if}}
     </div>
     <div class="panel-body">
@@ -21,6 +23,8 @@
           </div>
           {{#if attemptModel}}
             {{app-attempt-table attempt=selected}}
+          {{else}}
+            {{container-table container=selected}}
           {{/if}}
         </div>
       </div>

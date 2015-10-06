@@ -39,13 +39,41 @@ export default Ember.Component.extend({
     dom.attr("fill", this.colors[1]);
   },
 
+  getPerItemHeight: function() {
+    var arrSize = this.modelArr.length;
+
+    if (arrSize < 20) {
+      return 30;
+    } else if (arrSize < 100) {
+      return 10;
+    } else {
+      return 2;
+    }
+  },
+
+  getPerItemGap: function() {
+    var arrSize = this.modelArr.length;
+
+    if (arrSize < 20) {
+      return 5;
+    } else if (arrSize < 100) {
+      return 1;
+    } else {
+      return 1;
+    }
+  },
+
+  getCanvasHeight: function() {
+    return (this.getPerItemHeight() + this.getPerItemGap()) * this.modelArr.length + 200;
+  },
+
   draw: function(start, end) {
     // get w/h of the svg
     var bbox = d3.select("#" + this.get("parent-id"))
       .node()
       .getBoundingClientRect();
     this.canvas.w = bbox.width;
-    this.canvas.h = this.get("height");
+    this.canvas.h = this.getCanvasHeight();
 
     this.canvas.svg = d3.select("#" + this.get("parent-id"))
       .append("svg")
@@ -57,8 +85,8 @@ export default Ember.Component.extend({
 
   renderTimeline: function(start, end) {
     var border = 30;
-    var singleBarHeight = 30;
-    var gap = 5;
+    var singleBarHeight = this.getPerItemHeight();
+    var gap = this.getPerItemGap();
     var textWidth = 50;
     /*
      start-time                              end-time
@@ -139,14 +167,15 @@ export default Ember.Component.extend({
 
     this.bindTooltip(bar);
 
-
-    // show bar texts
-    for (var i = 0; i < this.modelArr.length; i++) {
-      this.canvas.svg.append("text")
-        .text(this.modelArr[i].get(this.get("label")))
-        .attr("y", border + (gap + singleBarHeight) * i + singleBarHeight / 2)
-        .attr("x", border)
-        .attr("class", "bar-chart-text");
+    if (this.modelArr.length <= 20) {
+      // show bar texts
+      for (var i = 0; i < this.modelArr.length; i++) {
+        this.canvas.svg.append("text")
+          .text(this.modelArr[i].get(this.get("label")))
+          .attr("y", border + (gap + singleBarHeight) * i + singleBarHeight / 2)
+          .attr("x", border)
+          .attr("class", "bar-chart-text");
+      }
     }
   },
 
@@ -180,9 +209,17 @@ export default Ember.Component.extend({
     this.initTooltip();
 
     // init model
-    this.get("model").forEach(function(o) {
-      this.modelArr.push(o);
-    }.bind(this));
+    if (this.get("rmModel")) {
+      this.get("rmModel").forEach(function(o) {
+        this.modelArr.push(o);
+      }.bind(this));
+    }
+
+    if (this.get("tsModel")) {
+     this.get("tsModel").forEach(function(o) {
+        this.modelArr.push(o);
+      }.bind(this)); 
+    }
 
     this.modelArr.sort(function(a, b) {
       var tsA = a.get("startTs");
@@ -190,7 +227,9 @@ export default Ember.Component.extend({
 
       return tsA - tsB;
     });
-    var begin = this.modelArr[0].get("startTs");
+    if (this.modelArr.length > 0) {
+      var begin = this.modelArr[0].get("startTs");
+    }
     var end = 0;
     for (var i = 0; i < this.modelArr.length; i++) {
       var ts = this.modelArr[i].get("finishedTs");
@@ -203,6 +242,9 @@ export default Ember.Component.extend({
     }
 
     this.draw(begin, end);
-    this.setSelected(this.modelArr[0]);
+
+    if (this.modelArr.length > 0) {
+      this.setSelected(this.modelArr[0]);
+    }
   },
 });
