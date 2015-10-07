@@ -15,8 +15,10 @@ export default DS.JSONAPIAdapter.extend({
 
   urlForFindRecord(id, modelName, snapshot) {
     var url = this._buildURL();
-    return url + '/apps/' + 
+    var url = url + '/apps/' + 
            Converter.attemptIdToAppId(id) + "/appattempts/" + id;
+    console.log(url);
+    return url;
   },
 
   ajax(url, method, hash) {
