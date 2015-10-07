@@ -321,8 +321,8 @@ public class RMWebServices extends WebServices {
       }
     }
     
-    Collection<RMNode> rmNodes = RMServerUtils.queryRMNodes(this.rm.getRMContext(),
-        acceptedStates);
+    Collection<RMNode> rmNodes = RMServerUtils.queryRMNodes(
+        this.rm.getRMContext(), acceptedStates);
     NodesInfo nodesInfo = new NodesInfo();
     for (RMNode rmNode : rmNodes) {
       NodeInfo nodeInfo = new NodeInfo(rmNode, sched);
@@ -682,6 +682,17 @@ public class RMWebServices extends WebServices {
   }
 
   @GET
+  @Path("/apps/{appid}/appattempts/{appattemptid}")
+  @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
+  @Override
+  public org.apache.hadoop.yarn.server.webapp.dao.AppAttemptInfo getAppAttempt(@Context HttpServletRequest req,
+      @Context HttpServletResponse res, @PathParam("appid") String appId,
+      @PathParam("appattemptid") String appAttemptId) {
+    init(res);
+    return super.getAppAttempt(req, res, appId, appAttemptId);
+  }
+
+  @GET
   @Path("/apps/{appid}/appattempts/{appattemptid}/containers")
   @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
   @Override
@@ -861,8 +872,7 @@ public class RMWebServices extends WebServices {
     NodeId nid = ConverterUtils.toNodeIdWithDefaultPort(nodeId);
     Map<NodeId, Set<String>> newLabelsForNode =
         new HashMap<NodeId, Set<String>>();
-    newLabelsForNode.put(nid,
-        new HashSet<String>(newNodeLabelsName));
+    newLabelsForNode.put(nid, new HashSet<String>(newNodeLabelsName));
 
     return replaceLabelsOnNode(newLabelsForNode, hsr,
         "/nodes/nodeid/replace-labels");
