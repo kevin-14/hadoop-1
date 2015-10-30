@@ -7,7 +7,9 @@ var Router = Ember.Router.extend({
 
 Router.map(function() {
   this.route('yarnApps');
-  this.route('yarnQueues');
+  this.route('yarnQueues', function() {
+    this.route('queuesSelector');
+  });
   this.route('clusterOverview');
   this.route('yarnApp', { path: '/yarnApp/:app_id' });
   this.route('yarnAppAttempt', { path: '/yarnAppAttempt/:app_attempt_id'});
