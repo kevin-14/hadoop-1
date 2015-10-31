@@ -23,7 +23,11 @@ export default DS.JSONAPISerializer.extend({
           maxCapacity: payload.maxCapacity,
           absCapacity: payload.absoluteCapacity,
           absMaxCapacity: payload.absoluteMaxCapacity,
-          absUsedCapacity: payload.absoluteUsedCapacity
+          absUsedCapacity: payload.absoluteUsedCapacity,
+          state: payload.state,
+          userLimit: payload.userLimit,
+          userLimitFactor: payload.userLimitFactor,
+          preemptionDisabled: payload.preemptionDisabled
         },
       };
 

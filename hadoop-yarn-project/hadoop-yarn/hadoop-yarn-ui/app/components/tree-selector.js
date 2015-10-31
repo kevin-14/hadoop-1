@@ -31,7 +31,9 @@ export default Ember.Component.extend({
         this.map[o.id] = o;
       }.bind(this));
 
-    this.initQueue('root', 1, this.treeData);
+    var selected = this.get("selected");
+
+    this.initQueue(selected, 1, this.treeData);
   },
 
   // get Children array of given queue
@@ -86,7 +88,7 @@ export default Ember.Component.extend({
   },
 
   update: function(source, root, tree, diagonal) {
-    var duration = 750;
+    var duration = 300;
     var i = 0;
 
     // Compute the new tree layout.
@@ -117,7 +119,12 @@ export default Ember.Component.extend({
         } else {
           return "LightCoral";
         }
-      });
+      })
+      .on("click", function(d,i){
+        if (d.queueData.get("name") != this.get("selected")) {
+            document.location.href = "yarnQueue/" + d.queueData.get("name");
+        }
+      }.bind(this));
 
     // append percentage
     nodeEnter.append("text")
@@ -148,7 +155,18 @@ export default Ember.Component.extend({
       .attr("transform", function(d) { return "translate(" + d.y + "," + d.x + ")"; });
 
     nodeUpdate.select("circle")
-      .attr("r", 20);
+      .attr("r", 20)
+      .attr("href", 
+        function(d) {
+          return "yarnQueues/" + d.queueData.get("name");
+        })
+      .style("stroke", function(d) {
+        if (d.queueData.get("name") == this.get("selected")) {
+          return "red";
+        } else {
+          return "gray";
+        }
+      }.bind(this));
 
     nodeUpdate.selectAll("text")
       .style("fill-opacity", 1);
@@ -203,7 +221,7 @@ export default Ember.Component.extend({
 
     var margin = {top: 20, right: 120, bottom: 20, left: 120};
     var treeWidth = this.maxDepth * 200;
-    var treeHeight = this.numOfLeafQueue * 150;
+    var treeHeight = this.numOfLeafQueue * 80;
     var width = treeWidth + margin.left + margin.right;
     var height = treeHeight + margin.top + margin.bottom;
     var layout = { };

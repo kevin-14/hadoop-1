@@ -10,5 +10,8 @@ export default DS.Model.extend({
   absCapacity: DS.attr('number'),
   absMaxCapacity: DS.attr('number'),
   absUsedCapacity: DS.attr('number'),
-  status: DS.attr('string'),
+  state: DS.attr('string'),
+  userLimit: DS.attr('number'),
+  userLimitFactor: DS.attr('number'),
+  preemptionDisabled: DS.attr('number'),
 });

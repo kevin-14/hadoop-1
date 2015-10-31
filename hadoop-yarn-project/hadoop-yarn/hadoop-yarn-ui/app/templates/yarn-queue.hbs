@@ -1,0 +1,12 @@
+<div class="container-fluid">
+  {{queue-navigator model=model.queues selected=model.selected}}
+</div>
+
+<div class="row">
+  <div class="col-md-4 container-fluid">
+    {{queue-configuration-table queue=model.selectedQueue}}
+  </div>
+</div>
+
+
+{{outlet}}

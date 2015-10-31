@@ -1,5 +1,6 @@
 import Ember from 'ember';
 
 export default Ember.Controller.extend({
-	loading: true,
+	needReload: true,
+  selectedQueue: undefined,
 });
