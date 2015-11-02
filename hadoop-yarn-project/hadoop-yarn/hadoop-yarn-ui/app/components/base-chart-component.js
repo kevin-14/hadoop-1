@@ -101,7 +101,7 @@ export default Ember.Component.extend({
       x1: x1,
       y1: y1,
       x2: x2 - 10,
-      y2: y2,
+      y2: y2 - 10,
       margin: 10
     };
     return layout;

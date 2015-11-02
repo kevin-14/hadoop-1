@@ -33,7 +33,7 @@ export default Ember.Component.extend({
 
     var selected = this.get("selected");
 
-    this.initQueue(selected, 1, this.treeData);
+    this.initQueue("root", 1, this.treeData);
   },
 
   // get Children array of given queue
@@ -249,21 +249,6 @@ export default Ember.Component.extend({
     d3.select(self.frameElement).style("height", height);
 
     this.update(root, root, tree, diagonal);
-  },
-
-  // Toggle children on click.
-  doubleClick: function(d) {
-    /*
-    if (d.children) {
-      d._children = d.children;
-      d.children = null;
-    } else {
-      d.children = d._children;
-      d._children = null;
-    }
-    this.update(d);
-    this.update(source, root, trees, diagonal) {
-    */
   },
 
   didInsertElement: function() {

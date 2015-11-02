@@ -9,6 +9,12 @@ export default DS.JSONAPIAdapter.extend({
   pathForType(modelName) {
     return 'apps'; // move to some common place, return path by modelname.
   },
+  /*
+  urlForQuery(query, modelName) {
+    var url = this._buildURL();
+    return url + '/apps/' + query.appId + "/appattempts";
+  },
+  */
   ajax(url, method, hash) {
     hash = hash || {};
     hash.crossDomain = true;

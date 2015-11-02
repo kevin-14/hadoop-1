@@ -3,11 +3,11 @@
 </div>
 
 <div class="row">
-  <div class="col-md-4 container-fluid">
+  <div class="col-md-3 container-fluid">
     {{queue-configuration-table queue=model.selectedQueue}}
   </div>
 
-  <div class="col-md-4 container-fluid" id="capacity-bar-chart">
+  <div class="col-md-3 container-fluid" id="capacity-bar-chart">
     {{bar-chart data=model.selectedQueue.capacitiesBarChartData 
         title="Queue Capacities" 
         parentId="capacity-bar-chart"
@@ -16,22 +16,30 @@
         maxHeight=250}}
   </div>
 
-  <div class="col-md-4 container-fluid" id="userusage-donut-chart">
+  <div class="col-md-3 container-fluid" id="userusage-donut-chart">
     {{donut-chart data=model.selectedQueue.userUsagesDonutChartData 
         title="User Usages" 
         showLabels=true
         parentId="userusage-donut-chart"
-        maxHeight=350}}
+        maxHeight=250}}
   </div>
 
-  <div class="col-md-4 container-fluid" id="numapplications-donut-chart">
+  <div class="col-md-3 container-fluid" id="numapplications-donut-chart">
     {{donut-chart data=model.selectedQueue.numOfApplicationsDonutChartData 
         title="Applications" 
         showLabels=true
         parentId="numapplications-donut-chart"
-        maxHeight=350}}
+        maxHeight=250}}
   </div>
 </div>
 
+<hr>
+
+<div class="row">
+  <div class="col-md-12 container-fluid">
+    {{app-table table-id="apps-table" arr=model.apps}}
+    {{simple-table table-id="apps-table" bFilter=true colTypes="elapsed-time" colTargets="7"}}
+  </div>
+</div>
 
 {{outlet}}
