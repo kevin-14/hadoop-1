@@ -11,13 +11,18 @@
       <td>{{queue.id}}</td>
     </tr>
     <tr>
-      <td>Capacity</td>
+      <td>Configured Capacity</td>
       <td>{{queue.capacity}}</td>
     </tr>
     <tr>
-      <td>Status</td>
+      <td>Configured Max Capacity</td>
+      <td>{{queue.maxCapacity}}</td>
+    </tr>
+    <tr>
+      <td>State</td>
       <td>{{queue.state}}</td>
     </tr>
+  {{#if queue.isLeafQueue}}
     <tr>
       <td>User Limit Percent</td>
       <td>{{queue.userLimit}}</td>
@@ -30,5 +35,6 @@
       <td>Preemption Disabled</td>
       <td>{{queue.preemptionDisabled}}</td>
     </tr>
+  {{/if}}
   </tbody>
 </table>

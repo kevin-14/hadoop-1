@@ -14,4 +14,12 @@ export default DS.Model.extend({
   userLimit: DS.attr('number'),
   userLimitFactor: DS.attr('number'),
   preemptionDisabled: DS.attr('number'),
+
+  isLeafQueue: function() {
+    var len = this.get("children.length");
+    if (!len) {
+      return true;
+    }
+    return len <= 0;
+  }.property("children"),
 });

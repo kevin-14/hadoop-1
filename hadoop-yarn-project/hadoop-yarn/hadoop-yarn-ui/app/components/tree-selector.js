@@ -105,7 +105,12 @@ export default Ember.Component.extend({
     // Enter any new nodes at the parent's previous position.
     var nodeEnter = node.enter().append("g")
       .attr("class", "node")
-      .attr("transform", function(d) { return "translate(" + source.y0 + "," + source.x0 + ")"; });
+      .attr("transform", function(d) { return "translate(" + source.y0 + "," + source.x0 + ")"; })
+      .on("click", function(d,i){
+        if (d.queueData.get("name") != this.get("selected")) {
+            document.location.href = "yarnQueue/" + d.queueData.get("name");
+        }
+      }.bind(this));
       // .on("click", click);
 
     nodeEnter.append("circle")
@@ -119,12 +124,7 @@ export default Ember.Component.extend({
         } else {
           return "LightCoral";
         }
-      })
-      .on("click", function(d,i){
-        if (d.queueData.get("name") != this.get("selected")) {
-            document.location.href = "yarnQueue/" + d.queueData.get("name");
-        }
-      }.bind(this));
+      });
 
     // append percentage
     nodeEnter.append("text")
