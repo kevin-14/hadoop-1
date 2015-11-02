@@ -26,7 +26,7 @@ export default BaseChartComponent.extend({
     var singleBarHeight = 30;
 
     // 50 is for text
-    var maxBarWidth = layout.x2 - layout.x1 - 2 * layout.margin - 2 * textWidth;
+    var maxBarWidth = layout.x2 - layout.x1 - 2 * layout.margin - textWidth - 50;
 
     // 30 is for title
     var maxBarsHeight = layout.y2 - layout.y1 - 2 * layout.margin - 30;

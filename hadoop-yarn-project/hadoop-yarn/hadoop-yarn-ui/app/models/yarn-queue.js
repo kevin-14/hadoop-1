@@ -60,11 +60,11 @@ export default DS.Model.extend({
   numOfApplicationsDonutChartData: function() {
     return [
       {
-        label: "Pending Applications",
+        label: "Pending Apps",
         value: this.get("numPendingApplications") || 0 // TODO, fix the REST API so root will return #applications as well.
       },
       {
-        label: "Active Applications",
+        label: "Active Apps",
         value: this.get("numActiveApplications") || 0
       }
     ]
