@@ -11,7 +11,5 @@ export default Ember.Route.extend({
 
   afterModel(model) {
     model.selectedQueue = this.store.peekRecord('yarnQueue', model.selected);
-
-    console.log(model.selectedQueue);
   }
 });

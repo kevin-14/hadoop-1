@@ -6,6 +6,23 @@
   <div class="col-md-4 container-fluid">
     {{queue-configuration-table queue=model.selectedQueue}}
   </div>
+
+  <div class="col-md-4 container-fluid" id="capacity-bar-chart">
+    {{bar-chart data=model.selectedQueue.capacitiesBarChartData 
+        title="Queue Capacities" 
+        parentId="capacity-bar-chart"
+        textWidth=150
+        ratio=0.5
+        maxHeight=250}}
+  </div>
+
+  <div class="col-md-4 container-fluid" id="userusage-donut-chart">
+    {{donut-chart data=model.selectedQueue.userUsageDonutChartData 
+        title="User Usages" 
+        showLabels=true
+        parentId="userusage-donut-chart"
+        maxHeight=350}}
+  </div>
 </div>
 
 

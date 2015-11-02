@@ -22,4 +22,38 @@ export default DS.Model.extend({
     }
     return len <= 0;
   }.property("children"),
+
+  capacitiesBarChartData: function() {
+    return [
+      {
+        label: "Absolute Capacity",
+        value: this.get("name") == "root" ? 100 : this.get("absCapacity")
+      },
+      {
+        label: "Absolute Used",
+        value: this.get("name") == "root" ? this.get("usedCapacity") : this.get("absUsedCapacity")
+      },
+      {
+        label: "Absolute Max Capacity",
+        value: this.get("name") == "root" ? 100 : this.get("absMaxCapacity")
+      }
+    ]
+  }.property("absCapacity", "absUsedCapacity", "absMaxCapacity"),
+
+  userUsageDonutChartData: function() {
+    return [
+      {
+        label: "Absolute Capacity",
+        value: 1
+      },
+      {
+        label: "Absolute Used",
+        value: 2
+      },
+      {
+        label: "Absolute Max Capacity",
+        value: 3
+      }
+    ]
+  }.property()
 });
