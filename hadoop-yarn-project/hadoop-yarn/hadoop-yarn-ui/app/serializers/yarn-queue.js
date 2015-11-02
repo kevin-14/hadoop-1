@@ -11,6 +11,31 @@ export default DS.JSONAPISerializer.extend({
         });
       }
 
+      var includedData = [];
+      var relationshipUserData = [];
+
+      // update user models
+      if (payload.users && payload.users.user) {
+        payload.users.user.forEach(function(u) {
+          includedData.push({
+            type: "YarnUser",
+            id: u.username + "_" + payload.queueName,
+            attributes: {
+              name: u.username,
+              queueName: payload.queueName,
+              usedMemoryMB: u.resourcesUsed.memory || 0,
+              usedVCore: u.resourcesUsed.vCores || 0,
+            }
+          });
+
+          relationshipUserData.push({
+            type: "YarnUser",
+            id: u.username + "_" + payload.queueName,
+          })
+        });
+      }
+
+
       var fixedPayload = {
         id: id,
         type: primaryModelClass.modelName, // yarn-queue
@@ -27,40 +52,63 @@ export default DS.JSONAPISerializer.extend({
           state: payload.state,
           userLimit: payload.userLimit,
           userLimitFactor: payload.userLimitFactor,
-          preemptionDisabled: payload.preemptionDisabled
+          preemptionDisabled: payload.preemptionDisabled,
+          numPendingApplications: payload.numPendingApplications,
+          numActiveApplications: payload.numActiveApplications,
         },
+        // Relationships
+        relationships: {
+          users: {
+            data: relationshipUserData
+          }
+        }
       };
 
-      return this._super(store, primaryModelClass, fixedPayload, id,
-        requestType);
+      return {
+        queue: this._super(store, primaryModelClass, fixedPayload, id, requestType),
+        includedData: includedData
+      }
     },
 
     handleQueue(store, primaryModelClass, payload, id, requestType) {
       var data = [];
+      var includedData = []
+      var result = this.normalizeSingleResponse(store, primaryModelClass,
+        payload, id, requestType);
 
-      data.push(this.normalizeSingleResponse(store, primaryModelClass,
-        payload,
-        id, requestType));
+      data.push(result.queue);
+      includedData = includedData.concat(result.includedData);
 
       if (payload.queues) {
         for (var i = 0; i < payload.queues.queue.length; i++) {
           var queue = payload.queues.queue[i];
           queue.myParent = payload.queueName;
-          data = data.concat(this.handleQueue(store, primaryModelClass, queue,
+          var childResult = this.handleQueue(store, primaryModelClass, queue,
             queue.queueName,
-            requestType));
+            requestType);
+
+          data = data.concat(childResult.data);
+          includedData = includedData.concat(childResult.includedData);
         }
       }
 
-      return data;
+      return {
+        data: data,
+        includedData, includedData
+      }
     },
 
     normalizeArrayResponse(store, primaryModelClass, payload, id,
       requestType) {
       var normalizedArrayResponse = {};
-      normalizedArrayResponse.data = this.handleQueue(store,
+      var result = this.handleQueue(store,
         primaryModelClass,
         payload.scheduler.schedulerInfo, "root", requestType);
+
+      normalizedArrayResponse.data = result.data;
+      normalizedArrayResponse.included = result.includedData;
+
+      console.log(normalizedArrayResponse);
 
       return normalizedArrayResponse;
 

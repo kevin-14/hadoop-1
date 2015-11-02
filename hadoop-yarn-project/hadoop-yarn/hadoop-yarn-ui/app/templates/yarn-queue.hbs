@@ -17,10 +17,18 @@
   </div>
 
   <div class="col-md-4 container-fluid" id="userusage-donut-chart">
-    {{donut-chart data=model.selectedQueue.userUsageDonutChartData 
+    {{donut-chart data=model.selectedQueue.userUsagesDonutChartData 
         title="User Usages" 
         showLabels=true
         parentId="userusage-donut-chart"
+        maxHeight=350}}
+  </div>
+
+  <div class="col-md-4 container-fluid" id="numapplications-donut-chart">
+    {{donut-chart data=model.selectedQueue.numOfApplicationsDonutChartData 
+        title="Applications" 
+        showLabels=true
+        parentId="numapplications-donut-chart"
         maxHeight=350}}
   </div>
 </div>

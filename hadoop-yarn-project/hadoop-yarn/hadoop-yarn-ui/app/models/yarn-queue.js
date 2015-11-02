@@ -14,6 +14,9 @@ export default DS.Model.extend({
   userLimit: DS.attr('number'),
   userLimitFactor: DS.attr('number'),
   preemptionDisabled: DS.attr('number'),
+  numPendingApplications: DS.attr('number'),
+  numActiveApplications: DS.attr('number'),
+  users: DS.hasMany('YarnUser'),
 
   isLeafQueue: function() {
     var len = this.get("children.length");
@@ -40,20 +43,30 @@ export default DS.Model.extend({
     ]
   }.property("absCapacity", "absUsedCapacity", "absMaxCapacity"),
 
-  userUsageDonutChartData: function() {
+  userUsagesDonutChartData: function() {
+    var data = [];
+    if (this.get("users")) {
+      this.get("users").forEach(function(o) {
+        data.push({
+          label: o.get("name"),
+          value: o.get("usedMemoryMB")
+        })
+      });
+    }
+
+    return data;
+  }.property("users"),
+
+  numOfApplicationsDonutChartData: function() {
     return [
       {
-        label: "Absolute Capacity",
-        value: 1
+        label: "Pending Applications",
+        value: this.get("numPendingApplications") || 0 // TODO, fix the REST API so root will return #applications as well.
       },
       {
-        label: "Absolute Used",
-        value: 2
-      },
-      {
-        label: "Absolute Max Capacity",
-        value: 3
+        label: "Active Applications",
+        value: this.get("numActiveApplications") || 0
       }
     ]
-  }.property()
+  }.property(),
 });
