@@ -124,11 +124,11 @@ export default BaseChartComponent.extend({
 
     if (middleLabel) {
       var highLightColor = this.colors[0];
-      g.append("text").text(middleLabel).attr("x", cx).attr("y", cy - 20).
+      g.append("text").text(middleLabel).attr("x", cx).attr("y", cy - 10).
         attr("class", "donut-highlight-text").attr("fill", highLightColor);
-      g.append("text").text(middleValue).attr("x", cx).attr("y", cy + 30).
+      g.append("text").text(middleValue).attr("x", cx).attr("y", cy + 20).
         attr("class", "donut-highlight-text").attr("fill", highLightColor).
-        style("font-size", "40px");
+        style("font-size", "30px");
     }
 
     path.transition()
