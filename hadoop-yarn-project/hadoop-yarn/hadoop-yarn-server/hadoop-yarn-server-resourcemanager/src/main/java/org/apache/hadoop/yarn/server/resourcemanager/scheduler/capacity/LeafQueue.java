@@ -809,7 +809,7 @@ public class LeafQueue extends AbstractCSQueue {
   @Override
   public synchronized CSAssignment assignContainers(Resource clusterResource,
       FiCaSchedulerNode node, ResourceLimits currentResourceLimits,
-      SchedulingMode schedulingMode) {
+      SchedulingMode schedulingMode, boolean dryrun) {
     updateCurrentResourceLimits(currentResourceLimits, clusterResource);
 
     if (LOG.isDebugEnabled()) {
@@ -823,9 +823,9 @@ public class LeafQueue extends AbstractCSQueue {
       FiCaSchedulerApp application =
           getApplication(reservedContainer.getApplicationAttemptId());
       synchronized (application) {
-        CSAssignment assignment =
-            application.assignContainers(clusterResource, node,
-                currentResourceLimits, schedulingMode, reservedContainer);
+        CSAssignment assignment = application.assignContainers(clusterResource,
+            node, currentResourceLimits, schedulingMode, reservedContainer,
+            dryrun);
         handleExcessReservedContainer(clusterResource, assignment, node,
             application);
         return assignment;

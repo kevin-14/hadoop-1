@@ -472,7 +472,8 @@ public class FiCaSchedulerApp extends SchedulerApplicationAttempt {
   
   public CSAssignment assignContainers(Resource clusterResource,
       FiCaSchedulerNode node, ResourceLimits currentResourceLimits,
-      SchedulingMode schedulingMode, RMContainer reservedContainer) {
+      SchedulingMode schedulingMode, RMContainer reservedContainer,
+      boolean dryrun) {
     if (LOG.isDebugEnabled()) {
       LOG.debug("pre-assignContainers for application "
           + getApplicationId());
@@ -481,7 +482,7 @@ public class FiCaSchedulerApp extends SchedulerApplicationAttempt {
 
     synchronized (this) {
       return containerAllocator.assignContainers(clusterResource, node,
-          schedulingMode, currentResourceLimits, reservedContainer);
+          schedulingMode, currentResourceLimits, reservedContainer, dryrun);
     }
   }
 

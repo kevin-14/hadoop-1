@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.apache.hadoop.yarn.api.records.ContainerId;
@@ -129,9 +130,11 @@ public class PreemptionManager {
     // to-preempt containers for this app only
     Map<ContainerId, ToPreemptContainer> toPreemptContainers;
     // to-preempt resources, priority -> <resource-name,
-    //    how-much-resource-marked-to-be-preempted-from-other-applications>
+    // -- how-much-resource-marked-to-be-preempted-from-other-applications>
     Map<Priority, Map<String, Resource>> toPreemptResources;
-    // container to reference of how much resource marked to be preemption classified by priority and resourceName (the reference of resource in above map)
+    // container to reference of how much resource marked to be preemption
+    // classified by priority and resourceName (the reference of resource in
+    // above map)
     Map<ContainerId, Resource> containerIdToToPreemptResource;
     
     public DemandingApp(ApplicationAttemptId appAttemptId,
@@ -200,6 +203,17 @@ public class PreemptionManager {
             demandingApps.get(container.application.getApplicationAttemptId());
         if (app != null) {
           app.containerCompleted(completedContainer);
+        }
+      }
+    }
+    
+    void appAttemptCompleted(ApplicationAttemptId appAttemptId) {
+      if (demandingApps.containsKey(appAttemptId)) {
+        DemandingApp demandingApp = demandingApps.remove(appAttemptId);
+        Set<ContainerId> containersRequiredByDemandingApp =
+            demandingApp.toPreemptContainers.keySet();
+        for (ContainerId id : containersRequiredByDemandingApp) {
+          toPreemptContainers.remove(id);
         }
       }
     }

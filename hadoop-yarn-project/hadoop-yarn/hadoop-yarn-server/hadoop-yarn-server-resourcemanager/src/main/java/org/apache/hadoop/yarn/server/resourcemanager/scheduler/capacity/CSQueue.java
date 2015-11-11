@@ -200,6 +200,10 @@ extends org.apache.hadoop.yarn.server.resourcemanager.scheduler.Queue {
       FiCaSchedulerNode node, ResourceLimits resourceLimits,
       SchedulingMode schedulingMode);
   
+  public CSAssignment assignContainers(Resource clusterResource,
+      FiCaSchedulerNode node, ResourceLimits resourceLimits,
+      SchedulingMode schedulingMode, boolean dryRun);
+  
   /**
    * A container assigned to the queue has completed.
    * @param clusterResource the resource of the cluster

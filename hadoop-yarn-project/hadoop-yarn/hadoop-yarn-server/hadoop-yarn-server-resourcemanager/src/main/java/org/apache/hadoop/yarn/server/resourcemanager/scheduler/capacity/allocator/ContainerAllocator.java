@@ -47,16 +47,17 @@ public class ContainerAllocator extends AbstractContainerAllocator {
   @Override
   public CSAssignment assignContainers(Resource clusterResource,
       FiCaSchedulerNode node, SchedulingMode schedulingMode,
-      ResourceLimits resourceLimits, RMContainer reservedContainer) {
+      ResourceLimits resourceLimits, RMContainer reservedContainer,
+      boolean dryrun) {
     if (reservedContainer != null) {
       if (reservedContainer.getState() == RMContainerState.RESERVED) {
         // It's a regular container
         return regularContainerAllocator.assignContainers(clusterResource,
-            node, schedulingMode, resourceLimits, reservedContainer);
+            node, schedulingMode, resourceLimits, reservedContainer, dryrun);
       } else {
         // It's a increase container
         return increaseContainerAllocator.assignContainers(clusterResource,
-            node, schedulingMode, resourceLimits, reservedContainer);
+            node, schedulingMode, resourceLimits, reservedContainer, dryrun);
       }
     } else {
       /*
@@ -65,14 +66,14 @@ public class ContainerAllocator extends AbstractContainerAllocator {
        */
       CSAssignment assign =
           increaseContainerAllocator.assignContainers(clusterResource, node,
-              schedulingMode, resourceLimits, null);
+              schedulingMode, resourceLimits, null, dryrun);
       if (Resources.greaterThan(rc, clusterResource, assign.getResource(),
           Resources.none())) {
         return assign;
       }
 
       return regularContainerAllocator.assignContainers(clusterResource, node,
-          schedulingMode, resourceLimits, null);
+          schedulingMode, resourceLimits, null, dryrun);
     }
   }
 

@@ -173,7 +173,13 @@ public class IncreaseContainerAllocator extends AbstractContainerAllocator {
   @Override
   public CSAssignment assignContainers(Resource clusterResource,
       FiCaSchedulerNode node, SchedulingMode schedulingMode,
-      ResourceLimits resourceLimits, RMContainer reservedContainer) {
+      ResourceLimits resourceLimits, RMContainer reservedContainer,
+      boolean dryrun) {
+    // TODO, IncreaseContainerAllocator doesn't support dryrun for now.
+    if (dryrun) {
+      return CSAssignment.SKIP_ASSIGNMENT;
+    }
+    
     AppSchedulingInfo sinfo = application.getAppSchedulingInfo();
     NodeId nodeId = node.getNodeID();
 

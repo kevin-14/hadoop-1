@@ -1172,6 +1172,14 @@ public class CapacityScheduler extends
     // Assign new containers...
     // 1. Check for reserved applications
     // 2. Schedule if there are no reservations
+    
+    // Do we need a dryrun to check preemption?
+    // TODO, now hard coded dryrun to once per 10 ticks.
+    long tick = node.addAndGetTick();
+    boolean dryrun = false;
+    if (tick % 10 == 0) {
+      dryrun = true;
+    }
 
     RMContainer reservedContainer = node.getReservedContainer();
     if (reservedContainer != null) {
@@ -1192,7 +1200,7 @@ public class CapacityScheduler extends
               // resources, should consider labeled resources as well.
               new ResourceLimits(labelManager.getResourceByLabel(
                   RMNodeLabelsManager.NO_LABEL, clusterResource)),
-              SchedulingMode.RESPECT_PARTITION_EXCLUSIVITY);
+              SchedulingMode.RESPECT_PARTITION_EXCLUSIVITY, dryrun);
       if (assignment.isFulfilledReservation()) {
         CSAssignment tmp =
             new CSAssignment(reservedContainer.getReservedResource(),
@@ -1223,7 +1231,7 @@ public class CapacityScheduler extends
             // resources, should consider labeled resources as well.
             new ResourceLimits(labelManager.getResourceByLabel(
                 RMNodeLabelsManager.NO_LABEL, clusterResource)),
-            SchedulingMode.RESPECT_PARTITION_EXCLUSIVITY);
+            SchedulingMode.RESPECT_PARTITION_EXCLUSIVITY, dryrun);
         if (Resources.greaterThan(calculator, clusterResource,
             assignment.getResource(), Resources.none())) {
           updateSchedulerHealth(lastNodeUpdateTime, node, assignment);

@@ -35,6 +35,9 @@ public class FiCaSchedulerNode extends SchedulerNode {
 
   private static final Log LOG = LogFactory.getLog(FiCaSchedulerNode.class);
   
+  // How many times this scheduler node accessed by scheduler
+  private volatile long tick = 0;
+  
   public FiCaSchedulerNode(RMNode node, boolean usePortForNodeName,
       Set<String> nodeLabels) {
     super(node, usePortForNodeName, nodeLabels);
@@ -42,6 +45,10 @@ public class FiCaSchedulerNode extends SchedulerNode {
 
   public FiCaSchedulerNode(RMNode node, boolean usePortForNodeName) {
     this(node, usePortForNodeName, CommonNodeLabelsManager.EMPTY_STRING_SET);
+  }
+  
+  public long addAndGetTick() {
+    return tick++;
   }
 
   @Override

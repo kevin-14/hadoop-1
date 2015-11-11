@@ -32,6 +32,8 @@ import org.apache.hadoop.yarn.server.resourcemanager.scheduler.common.fica.FiCaS
 import org.apache.hadoop.yarn.util.resource.ResourceCalculator;
 import org.apache.hadoop.yarn.util.resource.Resources;
 
+import com.sun.xml.internal.xsom.impl.util.DraconianErrorHandler;
+
 /**
  * For an application, resource limits and resource requests, decide how to
  * allocate container. This is to make application resource allocation logic
@@ -53,7 +55,7 @@ public abstract class AbstractContainerAllocator {
 
   protected CSAssignment getCSAssignmentFromAllocateResult(
       Resource clusterResource, ContainerAllocation result,
-      RMContainer rmContainer) {
+      RMContainer rmContainer, boolean dryrun) {
     // Handle skipped
     boolean skipped =
         (result.getAllocationState() == AllocationState.APP_SKIPPED);
@@ -72,40 +74,42 @@ public abstract class AbstractContainerAllocator {
       assignment.setResource(allocatedResource);
       assignment.setType(result.getContainerNodeType());
 
-      if (result.getAllocationState() == AllocationState.RESERVED) {
-        // This is a reserved container
-        LOG.info("Reserved container " + " application="
-            + application.getApplicationId() + " resource=" + allocatedResource
-            + " queue=" + this.toString() + " cluster=" + clusterResource);
-        assignment.getAssignmentInformation().addReservationDetails(
-            updatedContainer.getId(),
-            application.getCSLeafQueue().getQueuePath());
-        assignment.getAssignmentInformation().incrReservations();
-        Resources.addTo(assignment.getAssignmentInformation().getReserved(),
-            allocatedResource);
-      } else if (result.getAllocationState() == AllocationState.ALLOCATED){
-        // This is a new container
-        // Inform the ordering policy
-        LOG.info("assignedContainer" + " application attempt="
-            + application.getApplicationAttemptId() + " container="
-            + updatedContainer.getId() + " queue=" + this + " clusterResource="
-            + clusterResource);
+      if (!dryrun) {
+        // Only update following fields if it's not dryrun
+        if (result.getAllocationState() == AllocationState.RESERVED) {
+          // This is a reserved container
+          LOG.info("Reserved container " + " application="
+              + application.getApplicationId() + " resource="
+              + allocatedResource + " queue=" + this.toString() + " cluster="
+              + clusterResource);
+          assignment.getAssignmentInformation().addReservationDetails(
+              updatedContainer.getId(),
+              application.getCSLeafQueue().getQueuePath());
+          assignment.getAssignmentInformation().incrReservations();
+          Resources.addTo(assignment.getAssignmentInformation().getReserved(),
+              allocatedResource);
+        } else if (result.getAllocationState() == AllocationState.ALLOCATED) {
+          // This is a new container
+          // Inform the ordering policy
+          LOG.info("assignedContainer" + " application attempt="
+              + application.getApplicationAttemptId() + " container="
+              + updatedContainer.getId() + " queue=" + this
+              + " clusterResource=" + clusterResource);
 
-        application
-            .getCSLeafQueue()
-            .getOrderingPolicy()
-            .containerAllocated(application,
-                application.getRMContainer(updatedContainer.getId()));
+          application.getCSLeafQueue().getOrderingPolicy().containerAllocated(
+              application,
+              application.getRMContainer(updatedContainer.getId()));
 
-        assignment.getAssignmentInformation().addAllocationDetails(
-            updatedContainer.getId(),
-            application.getCSLeafQueue().getQueuePath());
-        assignment.getAssignmentInformation().incrAllocations();
-        Resources.addTo(assignment.getAssignmentInformation().getAllocated(),
-            allocatedResource);
-        
-        if (rmContainer != null) {
-          assignment.setFulfilledReservation(true);
+          assignment.getAssignmentInformation().addAllocationDetails(
+              updatedContainer.getId(),
+              application.getCSLeafQueue().getQueuePath());
+          assignment.getAssignmentInformation().incrAllocations();
+          Resources.addTo(assignment.getAssignmentInformation().getAllocated(),
+              allocatedResource);
+
+          if (rmContainer != null) {
+            assignment.setFulfilledReservation(true);
+          }
         }
       }
     }
@@ -127,5 +131,6 @@ public abstract class AbstractContainerAllocator {
    */
   public abstract CSAssignment assignContainers(Resource clusterResource,
       FiCaSchedulerNode node, SchedulingMode schedulingMode,
-      ResourceLimits resourceLimits, RMContainer reservedContainer);
+      ResourceLimits resourceLimits, RMContainer reservedContainer,
+      boolean dryrun);
 }

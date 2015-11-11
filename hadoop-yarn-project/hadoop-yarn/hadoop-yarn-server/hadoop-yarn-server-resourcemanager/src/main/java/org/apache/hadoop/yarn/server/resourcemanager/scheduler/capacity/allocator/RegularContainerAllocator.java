@@ -658,10 +658,14 @@ public class RegularContainerAllocator extends AbstractContainerAllocator {
   private ContainerAllocation allocate(Resource clusterResource,
       FiCaSchedulerNode node, SchedulingMode schedulingMode,
       ResourceLimits resourceLimits, Priority priority,
-      RMContainer reservedContainer) {
+      RMContainer reservedContainer, boolean dryrun) {
     ContainerAllocation result =
         preAllocation(clusterResource, node, schedulingMode, resourceLimits,
             priority, reservedContainer);
+    
+    if (dryrun) {
+      return result;
+    }
 
     if (AllocationState.ALLOCATED == result.state
         || AllocationState.RESERVED == result.state) {
@@ -677,7 +681,7 @@ public class RegularContainerAllocator extends AbstractContainerAllocator {
   public CSAssignment assignContainers(Resource clusterResource,
       FiCaSchedulerNode node, SchedulingMode schedulingMode,
       ResourceLimits resourceLimits,
-      RMContainer reservedContainer) {
+      RMContainer reservedContainer, boolean dryrun) {
     if (reservedContainer == null) {
       // Check if application needs more resource, skip if it doesn't need more.
       if (!application.hasPendingResourceRequest(rc,
@@ -694,25 +698,25 @@ public class RegularContainerAllocator extends AbstractContainerAllocator {
       for (Priority priority : application.getPriorities()) {
         ContainerAllocation result =
             allocate(clusterResource, node, schedulingMode, resourceLimits,
-                priority, null);
+                priority, null, dryrun);
 
         AllocationState allocationState = result.getAllocationState();
         if (allocationState == AllocationState.PRIORITY_SKIPPED) {
           continue;
         }
         return getCSAssignmentFromAllocateResult(clusterResource, result,
-            null);
+            null, dryrun);
       }
 
       // We will reach here if we skipped all priorities of the app, so we will
       // skip the app.
       return CSAssignment.SKIP_ASSIGNMENT;
     } else {
-      ContainerAllocation result =
-          allocate(clusterResource, node, schedulingMode, resourceLimits,
-              reservedContainer.getReservedPriority(), reservedContainer);
+      ContainerAllocation result = allocate(clusterResource, node,
+          schedulingMode, resourceLimits,
+          reservedContainer.getReservedPriority(), reservedContainer, dryrun);
       return getCSAssignmentFromAllocateResult(clusterResource, result,
-          reservedContainer);
+          reservedContainer, dryrun);
     }
   }
 }
