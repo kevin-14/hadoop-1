@@ -874,7 +874,7 @@ public class LeafQueue extends AbstractCSQueue {
       // Try to schedule
       CSAssignment assignment =
           application.assignContainers(clusterResource, node,
-              currentResourceLimits, schedulingMode, null);
+              currentResourceLimits, schedulingMode, null, dryrun);
 
       if (LOG.isDebugEnabled()) {
         LOG.debug("post-assignContainers for application "

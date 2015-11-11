@@ -32,8 +32,6 @@ import org.apache.hadoop.yarn.server.resourcemanager.scheduler.common.fica.FiCaS
 import org.apache.hadoop.yarn.util.resource.ResourceCalculator;
 import org.apache.hadoop.yarn.util.resource.Resources;
 
-import com.sun.xml.internal.xsom.impl.util.DraconianErrorHandler;
-
 /**
  * For an application, resource limits and resource requests, decide how to
  * allocate container. This is to make application resource allocation logic

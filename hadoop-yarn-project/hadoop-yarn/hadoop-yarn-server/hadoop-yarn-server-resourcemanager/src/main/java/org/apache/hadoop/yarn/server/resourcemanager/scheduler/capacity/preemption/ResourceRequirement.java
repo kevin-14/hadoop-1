@@ -18,16 +18,22 @@
 
 package org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.preemption;
 
+import org.apache.hadoop.yarn.api.records.Priority;
 import org.apache.hadoop.yarn.api.records.Resource;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.SchedulerApplicationAttempt;
 
 public class ResourceRequirement {
   final SchedulerApplicationAttempt application;
   final Resource required;
+  final Priority priority;
+  final String resourceName;
 
-  public ResourceRequirement(SchedulerApplicationAttempt application, Resource required) {
+  public ResourceRequirement(SchedulerApplicationAttempt application,
+      Resource required, Priority priority, String resourceName) {
     this.application = application;
     this.required = required;
+    this.priority = priority;
+    this.resourceName = resourceName;
   }
 
   public SchedulerApplicationAttempt getApplication() {
@@ -36,5 +42,13 @@ public class ResourceRequirement {
 
   public Resource getRequired() {
     return required;
+  }
+  
+  public Priority getPriority() {
+    return priority;
+  }
+  
+  public String getResourceName() {
+    return resourceName;
   }
 }
