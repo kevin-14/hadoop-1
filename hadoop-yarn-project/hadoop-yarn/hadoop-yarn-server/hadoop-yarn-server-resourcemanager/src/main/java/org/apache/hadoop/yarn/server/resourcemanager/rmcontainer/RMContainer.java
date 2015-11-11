@@ -86,4 +86,10 @@ public interface RMContainer extends EventHandler<RMContainerEvent> {
   boolean hasIncreaseReservation();
   
   void cancelIncreaseReservation();
+
+  String getUser();
+
+  String getQueue();
+  
+  String getNodeParititon();
 }
