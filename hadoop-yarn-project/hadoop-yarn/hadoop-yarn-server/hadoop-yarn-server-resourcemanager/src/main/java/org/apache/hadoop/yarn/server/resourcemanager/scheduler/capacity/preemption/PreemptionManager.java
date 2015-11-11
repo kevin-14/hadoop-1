@@ -19,24 +19,20 @@
 package org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.preemption;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.apache.hadoop.yarn.api.records.ContainerId;
+import org.apache.hadoop.yarn.api.records.Priority;
 import org.apache.hadoop.yarn.api.records.Resource;
 import org.apache.hadoop.yarn.server.resourcemanager.rmcontainer.RMContainer;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.SchedulerApplicationAttempt;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.CapacitySchedulerContext;
 import org.apache.hadoop.yarn.util.resource.ResourceCalculator;
 import org.apache.hadoop.yarn.util.resource.Resources;
-
-import com.google.common.collect.Lists;
 
 public class PreemptionManager {
   enum PreemptionType {
@@ -68,8 +64,6 @@ public class PreemptionManager {
       return container.getQueue() + "_" + container.getNodeParititon();
     }
   }
-  
-  ResourceCalculator rc;
 
   /*
    * One preemptable entity, this could be a queue, a user or application.
@@ -114,6 +108,10 @@ public class PreemptionManager {
       }
       return measure;
     }
+    
+    private PreemptableEntityMeasure get(String key) {
+      return map.get(key);
+    }
 
     public void updatePreemptableQueueEntity(String queue, String partition,
         Resource ideal, Resource maxPreempt) {
@@ -124,48 +122,157 @@ public class PreemptionManager {
       measure.maxPreemptable = maxPreempt;
     }
   }
-
-  static class PreemptionRelationshipManager {
-    Map<ContainerId, ToPreemptContainer> toPreemptContainers =
-        new HashMap<>();
-    Map<ApplicationAttemptId, Set<ContainerId>> applicationToPreemptCandidates =
-        new HashMap<>();
-  }
   
-  private List<RMContainer> getContainersToPreempt(List<RMContainer> candidates,
-      Resource required, CapacitySchedulerContext csContext) {
-    Resource cluster = csContext.getClusterResource();
-    Resource minimumAllocation = csContext.getMinimumResourceCapability();
+  static class DemandingApp {
+    ApplicationAttemptId appAttemptId;
+    SchedulerApplicationAttempt application;
+    // to-preempt containers for this app only
+    Map<ContainerId, ToPreemptContainer> toPreemptContainers;
+    // to-preempt resources, priority -> <resource-name,
+    //    how-much-resource-marked-to-be-preempted-from-other-applications>
+    Map<Priority, Map<String, Resource>> toPreemptResources;
+    // container to reference of how much resource marked to be preemption classified by priority and resourceName (the reference of resource in above map)
+    Map<ContainerId, Resource> containerIdToToPreemptResource;
     
-    // This approach assumes value of minimum-resource is reasonqble
-    // TODO, use different approach if nodeResource / minimumAllocation is too
-    // large 
-    
-    // Use solution of knapsack problem to get best combination of preempted
-    // containers. 
-    int normalizedTotal = Math.round(Resources.divide(rc,
-        csContext.getClusterResource(), required, minimumAllocation));
-    
-    List<List<RMContainer>> f = new ArrayList<List<RMContainer>>(normalizedTotal + 1);
-    
-    for (int i = 0; i < normalizedTotal + 1; i++) {
-      f.add(Collections.<RMContainer> emptyList());
+    public DemandingApp(ApplicationAttemptId appAttemptId,
+        SchedulerApplicationAttempt application) {
+      this.appAttemptId = appAttemptId;
+      this.application = application;
+      
+      toPreemptContainers = new HashMap<>();
+      toPreemptResources = new HashMap<>();
     }
     
-    for (int i = 0; )
+    void addToPreemptContainer(ToPreemptContainer container, Priority priority,
+        String resourceName) {
+      ContainerId containerId = container.container.getContainerId();
+      
+      toPreemptContainers.put(containerId, container);
+      if (!toPreemptResources.containsKey(priority)) {
+        toPreemptResources.put(priority, new HashMap<String, Resource>());
+      }
+      if (!toPreemptResources.get(priority).containsKey(resourceName)) {
+        toPreemptResources.get(priority).put(resourceName,
+            Resources.createResource(0));
+      }
+      
+      Resource resource = toPreemptResources.get(priority).get(resourceName);
+      containerIdToToPreemptResource.put(containerId, resource);
+      
+      Resources.addTo(resource,
+          container.container.getAllocatedResource());
+    }
+    
+    void containerCompleted(ContainerId completedContainer) {
+      if (toPreemptContainers.containsKey(completedContainer)) {
+        ToPreemptContainer container = toPreemptContainers.remove(completedContainer);
+        Resources.subtractFrom(
+            containerIdToToPreemptResource
+                .get(container.container.getContainerId()),
+            container.container.getAllocatedResource());
+      }
+    }
+  }
+
+  class PreemptionRelationshipManager {
+    Map<ContainerId, ToPreemptContainer> toPreemptContainers =
+        new HashMap<>();
+    Map<ApplicationAttemptId, DemandingApp> demandingApps =
+        new HashMap<>();
+    
+    void addToPreemptContainer(ToPreemptContainer container,
+        SchedulerApplicationAttempt application, Priority priority,
+        String resourceName) {
+      ApplicationAttemptId attemptId = application.getApplicationAttemptId();
+      if (!demandingApps.containsKey(attemptId)) {
+        demandingApps.put(attemptId, new DemandingApp(attemptId, application));
+      }
+      toPreemptContainers.put(container.container.getContainerId(), container);
+      demandingApps.get(attemptId).addToPreemptContainer(container, priority,
+          resourceName);
+    }
+    
+    void containerCompleted(ContainerId completedContainer) {
+      if (toPreemptContainers.containsKey(completedContainer)) {
+        ToPreemptContainer container =
+            toPreemptContainers.remove(completedContainer);
+        DemandingApp app =
+            demandingApps.get(container.application.getApplicationAttemptId());
+        if (app != null) {
+          app.containerCompleted(completedContainer);
+        }
+      }
+    }
+  }
+  
+  ResourceCalculator rc;
+  PreemptableEntitiesManager preemptableEntitiesManager =
+      new PreemptableEntitiesManager();
+  PreemptionRelationshipManager preemptionReleationshipManager =
+      new PreemptionRelationshipManager();
+  
+  private List<RMContainer> selectContainersToPreempt(List<RMContainer> candidates,
+      Resource required, Resource cluster) {
+    long timestamp = System.nanoTime();
+    
+    // Assume candidates is sorted by preemption order, first items will be preempted first.
+    // Scan the list to select which containers to be preempted.
+    Resource totalSelected = Resources.createResource(0);
+    List<RMContainer> selected = new ArrayList<>();
+    
+    for (RMContainer candidateContainer : candidates) {
+      String key = candidateContainer.getQueue() + "_"
+          + candidateContainer.getNodeParititon();
+      PreemptableEntityMeasure measure = preemptableEntitiesManager.get(key);
+      if (measure == null) {
+        continue;
+      }
+      
+      Resource markedPreempted =
+          measure.getTotalMarkedPreemptedForDryRun(timestamp);
+      Resource markedPreemptedIfCandidateSelected = Resources
+          .add(markedPreempted, candidateContainer.getAllocatedResource());
+      
+      // We get enough preemption headroom for the candidate
+      if (Resources.lessThanOrEqual(rc, cluster,
+          markedPreemptedIfCandidateSelected,
+          candidateContainer.getAllocatedResource())) {
+        Resources.addTo(markedPreempted,
+            candidateContainer.getAllocatedResource());
+        selected.add(candidateContainer);
+      }
+      
+      // update total resource as well
+      Resources.addTo(totalSelected, candidateContainer.getAllocatedResource());
+      if (Resources.fitsIn(required, totalSelected)) {
+        return selected;
+      }
+    }
+    
+    return null;
   }
 
   public boolean tryToPreempt(ResourceRequirement resourceRequirement,
       Collection<RMContainer> candidatesToPreempt,
       CapacitySchedulerContext csContext) {
-    for (PreemptionType preemptionType : Arrays.asList(
-        PreemptionType.DIFFERENT_QUEUE,
-        PreemptionType.SAME_QUEUE_DIFFERENT_USER,
-        PreemptionType.SAME_QUEUE_SAME_USER)) {
-      List<RMContainer> candidates = getContainers(preemptionType,
-          resourceRequirement, candidatesToPreempt);
-
+    List<RMContainer> candidates = getContainers(PreemptionType.DIFFERENT_QUEUE,
+        resourceRequirement, candidatesToPreempt);
+    
+    List<RMContainer> selectedContainers = selectContainersToPreempt(candidates,
+        resourceRequirement.getRequired(), csContext.getClusterResource());
+    
+    if (selectedContainers != null) {
+      // Updates container preemption info
+      for (RMContainer c : selectedContainers) {
+        String key = c.getQueue() + "_" + c.getNodeParititon();
+        PreemptableEntityMeasure measure = preemptableEntitiesManager.get(key);
+        measure.totalMarkedPreempted = measure.totalMarkedPreemptedForDryRun;
+      }
+      
+      return true;
     }
+    
+    return false;
   }
 
   PreemptionType getPreemptionType(ResourceRequirement requirement,
