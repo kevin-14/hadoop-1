@@ -402,92 +402,116 @@ public class ParentQueue extends AbstractCSQueue {
     
     CSAssignment assignment = 
         new CSAssignment(Resources.createResource(0, 0), NodeType.NODE_LOCAL);
+    Resource nodeAvailClone = Resources.clone(node.getAvailableResource());
     
-    while (canAssign(clusterResource, node)) {
-      if (LOG.isDebugEnabled()) {
-        LOG.debug("Trying to assign containers to child-queue of "
-          + getQueueName());
-      }
-      
-      // Are we over maximum-capacity for this queue?
-      // This will also consider parent's limits and also continuous reservation
-      // looking
-      if (!super.canAssignToThisQueue(clusterResource, node.getPartition(),
-          resourceLimits, Resources.createResource(
-              getMetrics().getReservedMB(), getMetrics()
-                  .getReservedVirtualCores()), schedulingMode)) {
-        break;
-      }
-      
-      // Schedule
-      CSAssignment assignedToChild =
-          assignContainersToChildQueues(clusterResource, node, resourceLimits,
-              schedulingMode, dryrun);
-      assignment.setType(assignedToChild.getType());
-      
-      // Done if no child-queue assigned anything
-      if (Resources.greaterThan(
-              resourceCalculator, clusterResource, 
-              assignedToChild.getResource(), Resources.none()) && !dryrun) {
-        // Track resource utilization for the parent-queue
-        super.allocateResource(clusterResource, assignedToChild.getResource(),
-            node.getPartition(), assignedToChild.isIncreasedAllocation());
-        
-        // Track resource utilization in this pass of the scheduler
-        Resources
-          .addTo(assignment.getResource(), assignedToChild.getResource());
-        Resources.addTo(assignment.getAssignmentInformation().getAllocated(),
-          assignedToChild.getAssignmentInformation().getAllocated());
-        Resources.addTo(assignment.getAssignmentInformation().getReserved(),
-            assignedToChild.getAssignmentInformation().getReserved());
-        assignment.getAssignmentInformation().incrAllocations(
-          assignedToChild.getAssignmentInformation().getNumAllocations());
-        assignment.getAssignmentInformation().incrReservations(
-          assignedToChild.getAssignmentInformation().getNumReservations());
-        assignment
-          .getAssignmentInformation()
-          .getAllocationDetails()
-          .addAll(
-              assignedToChild.getAssignmentInformation().getAllocationDetails());
-        assignment
-          .getAssignmentInformation()
-          .getReservationDetails()
-          .addAll(
-              assignedToChild.getAssignmentInformation()
-                  .getReservationDetails());
-        assignment.setIncreasedAllocation(assignedToChild
-            .isIncreasedAllocation());
-        
-        LOG.info("assignedContainer" +
-            " queue=" + getQueueName() + 
-            " usedCapacity=" + getUsedCapacity() +
-            " absoluteUsedCapacity=" + getAbsoluteUsedCapacity() +
-            " used=" + queueUsage.getUsed() + 
-            " cluster=" + clusterResource);
-
-      } else {
-        break;
-      }
-
-      if (LOG.isDebugEnabled()) {
-        LOG.debug("ParentQ=" + getQueueName()
-          + " assignedSoFarInThisIteration=" + assignment.getResource()
-          + " usedCapacity=" + getUsedCapacity()
-          + " absoluteUsedCapacity=" + getAbsoluteUsedCapacity());
-      }
-
-      // Do not assign more than one container if this isn't the root queue
-      // or if we've already assigned an off-switch container
-      if (!rootQueue || assignment.getType() == NodeType.OFF_SWITCH) {
+    try {
+      while (canAssign(clusterResource, node)) {
         if (LOG.isDebugEnabled()) {
-          if (rootQueue && assignment.getType() == NodeType.OFF_SWITCH) {
-            LOG.debug("Not assigning more than one off-switch container," +
-                " assignments so far: " + assignment);
-          }
+          LOG.debug("Trying to assign containers to child-queue of "
+              + getQueueName());
         }
-        break;
+
+        // Are we over maximum-capacity for this queue?
+        // This will also consider parent's limits and also continuous
+        // reservation
+        // looking
+        if (!super.canAssignToThisQueue(clusterResource, node.getPartition(),
+            resourceLimits,
+            Resources.createResource(getMetrics().getReservedMB(),
+                getMetrics().getReservedVirtualCores()),
+            schedulingMode)) {
+          break;
+        }
+
+        // Schedule
+        CSAssignment assignedToChild = assignContainersToChildQueues(
+            clusterResource, node, resourceLimits, schedulingMode, dryrun);
+        assignment.setType(assignedToChild.getType());
+
+        // Done if no child-queue assigned anything
+        if (Resources.greaterThan(resourceCalculator, clusterResource,
+            assignedToChild.getResource(), Resources.none())) {
+          if (!dryrun) {
+            // Track resource utilization for the parent-queue
+            super.allocateResource(clusterResource,
+                assignedToChild.getResource(), node.getPartition(),
+                assignedToChild.isIncreasedAllocation());
+
+            // Track resource utilization in this pass of the scheduler
+            Resources.addTo(assignment.getResource(),
+                assignedToChild.getResource());
+            Resources.addTo(
+                assignment.getAssignmentInformation().getAllocated(),
+                assignedToChild.getAssignmentInformation().getAllocated());
+            Resources.addTo(assignment.getAssignmentInformation().getReserved(),
+                assignedToChild.getAssignmentInformation().getReserved());
+            assignment.getAssignmentInformation().incrAllocations(
+                assignedToChild.getAssignmentInformation().getNumAllocations());
+            assignment.getAssignmentInformation()
+                .incrReservations(assignedToChild.getAssignmentInformation()
+                    .getNumReservations());
+            assignment.getAssignmentInformation().getAllocationDetails()
+                .addAll(assignedToChild.getAssignmentInformation()
+                    .getAllocationDetails());
+            assignment.getAssignmentInformation().getReservationDetails()
+                .addAll(assignedToChild.getAssignmentInformation()
+                    .getReservationDetails());
+            assignment.setIncreasedAllocation(
+                assignedToChild.isIncreasedAllocation());
+
+            LOG.info("assignedContainer" + " queue=" + getQueueName()
+                + " usedCapacity=" + getUsedCapacity()
+                + " absoluteUsedCapacity=" + getAbsoluteUsedCapacity()
+                + " used=" + queueUsage.getUsed() + " cluster="
+                + clusterResource);
+          } else {
+            // Update node available resource if we "allocated" anything 
+            if (CapacitySchedulerConfiguration.ROOT.equals(this.getQueueName())) {
+              Resource remainingResource = Resources.subtract(
+                  node.getAvailableResource(), assignedToChild.getResource());
+              if (Resources.fitsIn(resourceCalculator, clusterResource,
+                  Resources.none(), remainingResource)) {
+                // We don't need preemption to allocate this container, so we
+                // won't check other containers.
+                break;
+              } else {
+                // Since I "borrow" some resources from other containers, set
+                // available resource to 0 so next container allocation will
+                // preempt correct resources. 
+                node.setAvailableResource(Resources.none());
+              }
+            }
+          }
+        } else {
+          break;
+        }
+
+        if (LOG.isDebugEnabled()) {
+          LOG.debug("ParentQ=" + getQueueName()
+              + " assignedSoFarInThisIteration=" + assignment.getResource()
+              + " usedCapacity=" + getUsedCapacity() + " absoluteUsedCapacity="
+              + getAbsoluteUsedCapacity());
+        }
+
+        // Do not assign more than one container if this isn't the root queue
+        // or if we've already assigned an off-switch container
+        if (!rootQueue || assignment.getType() == NodeType.OFF_SWITCH) {
+          if (LOG.isDebugEnabled()) {
+            if (rootQueue && assignment.getType() == NodeType.OFF_SWITCH) {
+              LOG.debug("Not assigning more than one off-switch container,"
+                  + " assignments so far: " + assignment);
+            }
+          }
+          break;
+        }
       }
-    } 
+    } finally {
+      // Restore node's available resource if we're dryrun.
+      if (dryrun
+          && CapacitySchedulerConfiguration.ROOT.equals(this.getQueueName())) {
+        node.setAvailableResource(nodeAvailClone);
+      }
+    }
     
     return assignment;
   }

@@ -342,7 +342,7 @@ public class PreemptionManager {
       
       // update total resource as well
       Resources.addTo(totalSelected, candidateContainer.getAllocatedResource());
-      if (Resources.fitsIn(required, totalSelected)) {
+      if (Resources.fitsIn(rc, cluster, required, totalSelected)) {
         return selected;
       }
     }
@@ -366,8 +366,8 @@ public class PreemptionManager {
     return res != null ? res : Resources.none();
   }
   
-  public boolean canQueueuPreemptResourceFromOther(String queue, String partition,
-      Resource demandingResource) {
+  public boolean canQueueuPreemptResourceFromOther(Resource cluster,
+      String queue, String partition, Resource demandingResource) {
     String key = queue + "_" + partition;
     PreemptableEntityMeasure measure = preemptableEntitiesManager.get(key);
     if (measure != null) {
@@ -378,7 +378,7 @@ public class PreemptionManager {
       
       Resource headroom = Resources.subtract(measure.maxPreemptable,
           measure.totalMarkedPreempted);
-      if (Resources.fitsIn(demandingResource, headroom)) {
+      if (Resources.fitsIn(rc, cluster, demandingResource, headroom)) {
         return true;
       }
     }
@@ -387,15 +387,14 @@ public class PreemptionManager {
   }
 
   public boolean tryToPreempt(ResourceRequirement resourceRequirement,
-      Collection<RMContainer> candidatesToPreempt,
-      CapacitySchedulerContext csContext) {
+      Collection<RMContainer> candidatesToPreempt, Resource cluster) {
     selectingContainers.clear();
     
     List<RMContainer> candidates = getContainers(PreemptionType.DIFFERENT_QUEUE,
         resourceRequirement, candidatesToPreempt);
     
     List<RMContainer> selectedContainers = selectContainersToPreempt(candidates,
-        resourceRequirement.getRequired(), csContext.getClusterResource());
+        resourceRequirement.getRequired(), cluster);
     
     PreemptableEntityMeasure demandingQueueEntity = null;
     

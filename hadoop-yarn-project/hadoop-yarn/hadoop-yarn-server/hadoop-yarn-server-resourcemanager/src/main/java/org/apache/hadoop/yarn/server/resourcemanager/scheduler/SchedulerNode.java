@@ -197,6 +197,10 @@ public abstract class SchedulerNode {
   public synchronized Resource getAvailableResource() {
     return this.availableResource;
   }
+  
+  public synchronized void setAvailableResource(Resource availableResource) {
+    this.availableResource = availableResource;
+  }
 
   /**
    * Get used resources on the node.

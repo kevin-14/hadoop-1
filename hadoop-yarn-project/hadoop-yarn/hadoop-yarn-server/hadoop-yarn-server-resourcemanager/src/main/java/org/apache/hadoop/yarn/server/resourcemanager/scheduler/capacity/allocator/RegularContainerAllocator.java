@@ -407,8 +407,10 @@ public class RegularContainerAllocator extends AbstractContainerAllocator {
       return false;
     }
     
-    // TODO, not finished for the try to preempt part.
-    preemptionManager.tryToPreempt(new ResourceRequirement(application, request.getCapability(), request.getPriority(), request.getResourceName()), , csContext)
+    return preemptionManager.tryToPreempt(
+        new ResourceRequirement(application, request.getCapability(),
+            request.getPriority(), request.getResourceName()),
+        node.getRunningContainers(), cluster);
   }
   
   private boolean checkExcessivePreemption(ResourceRequest request,
@@ -416,7 +418,7 @@ public class RegularContainerAllocator extends AbstractContainerAllocator {
     // Check if the queue which the app belongs to can preempt anything?
     Resource demanding =
         Resources.subtract(request.getCapability(), nodeAvailable);
-    if (!preemptionManager.canQueueuPreemptResourceFromOther(
+    if (!preemptionManager.canQueueuPreemptResourceFromOther(cluster,
         application.getQueueName(), nodePartition, demanding)) {
       return false;
     }
@@ -569,9 +571,10 @@ public class RegularContainerAllocator extends AbstractContainerAllocator {
         }
       }
       
-      // When dryrun, check if we have excessive preemption
+      // When dryrun, check if we need preempt
       if (dryrun) {
-        if (checkExcessivePreemption(request, clusterResource)) {
+        if (!tryToPremeptWhenDryrun(request, clusterResource,
+            node.getAvailableResource(), node)) {
           return ContainerAllocation.LOCALITY_SKIPPED;
         }
       }
@@ -600,7 +603,8 @@ public class RegularContainerAllocator extends AbstractContainerAllocator {
         }
         
         if (dryrun) {
-          if (checkExcessivePreemption(request, clusterResource)) {
+          if (!tryToPremeptWhenDryrun(request, clusterResource,
+              node.getAvailableResource(), node)) {
             return ContainerAllocation.LOCALITY_SKIPPED;
           }
         }
