@@ -365,6 +365,26 @@ public class PreemptionManager {
     Resource res = app.toPreemptResources.get(priority).get(resourceName);
     return res != null ? res : Resources.none();
   }
+  
+  public boolean canQueueuPreemptResourceFromOther(String queue, String partition,
+      Resource demandingResource) {
+    String key = queue + "_" + partition;
+    PreemptableEntityMeasure measure = preemptableEntitiesManager.get(key);
+    if (measure != null) {
+      if (measure.debtor) {
+        // Obviously, debtor cannot preempt resource from others
+        return false;
+      }
+      
+      Resource headroom = Resources.subtract(measure.maxPreemptable,
+          measure.totalMarkedPreempted);
+      if (Resources.fitsIn(demandingResource, headroom)) {
+        return true;
+      }
+    }
+    
+    return false;
+  }
 
   public boolean tryToPreempt(ResourceRequirement resourceRequirement,
       Collection<RMContainer> candidatesToPreempt,

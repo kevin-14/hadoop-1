@@ -26,6 +26,7 @@ import org.apache.hadoop.yarn.api.records.NodeId;
 import org.apache.hadoop.yarn.api.records.Priority;
 import org.apache.hadoop.yarn.api.records.Resource;
 import org.apache.hadoop.yarn.api.records.ResourceRequest;
+import org.apache.hadoop.yarn.proto.YarnServerCommonProtos.NodeActionProto;
 import org.apache.hadoop.yarn.server.resourcemanager.RMContext;
 import org.apache.hadoop.yarn.server.resourcemanager.nodelabels.RMNodeLabelsManager;
 import org.apache.hadoop.yarn.server.resourcemanager.rmapp.attempt.RMAppAttempt;
@@ -37,6 +38,7 @@ import org.apache.hadoop.yarn.server.resourcemanager.scheduler.SchedulerNode;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.SchedulerUtils;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.CSAssignment;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.SchedulingMode;
+import org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.preemption.ResourceRequirement;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.common.fica.FiCaSchedulerApp;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.common.fica.FiCaSchedulerNode;
 import org.apache.hadoop.yarn.server.utils.BuilderUtils;
@@ -400,13 +402,24 @@ public class RegularContainerAllocator extends AbstractContainerAllocator {
   
   private boolean tryToPremeptWhenDryrun(ResourceRequest request, Resource cluster,
       Resource nodeAvailable, SchedulerNode node) {
+    if (!checkExcessivePreemption(request, cluster, nodeAvailable,
+        node.getPartition())) {
+      return false;
+    }
     
+    // TODO, not finished for the try to preempt part.
+    preemptionManager.tryToPreempt(new ResourceRequirement(application, request.getCapability(), request.getPriority(), request.getResourceName()), , csContext)
   }
   
   private boolean checkExcessivePreemption(ResourceRequest request,
-      Resource cluster) {
-    // TODO
+      Resource cluster, Resource nodeAvailable, String nodePartition) {
     // Check if the queue which the app belongs to can preempt anything?
+    Resource demanding =
+        Resources.subtract(request.getCapability(), nodeAvailable);
+    if (!preemptionManager.canQueueuPreemptResourceFromOther(
+        application.getQueueName(), nodePartition, demanding)) {
+      return false;
+    }
     
     /* 
      * Two criterias of excessive preemption:
