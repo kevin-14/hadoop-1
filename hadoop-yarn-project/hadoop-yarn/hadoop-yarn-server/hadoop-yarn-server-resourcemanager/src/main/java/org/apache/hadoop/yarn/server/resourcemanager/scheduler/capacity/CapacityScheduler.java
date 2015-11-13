@@ -105,6 +105,7 @@ import org.apache.hadoop.yarn.server.resourcemanager.scheduler.SchedulerApplicat
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.SchedulerDynamicEditException;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.SchedulerHealth;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.SchedulerUtils;
+import org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.preemption.PreemptionManager;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.common.AssignmentInformation;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.common.QueueEntitlement;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.common.fica.FiCaSchedulerApp;
@@ -139,6 +140,7 @@ public class CapacityScheduler extends
 
   private static final Log LOG = LogFactory.getLog(CapacityScheduler.class);
   private YarnAuthorizationProvider authorizer;
+  private PreemptionManager preemptionManager;
  
   private CSQueue root;
   // timeout to join when we stop this service
@@ -236,6 +238,7 @@ public class CapacityScheduler extends
 
   public CapacityScheduler() {
     super(CapacityScheduler.class.getName());
+    preemptionManager = new PreemptionManager();
   }
 
   @Override
@@ -2018,5 +2021,9 @@ public class CapacityScheduler extends
     LOG.info("Priority '" + appPriority + "' is updated in queue :"
         + rmApp.getQueue() + " for application: " + applicationId
         + " for the user: " + rmApp.getUser());
+  }
+  
+  public PreemptionManager getPreemptionManager() {
+    return preemptionManager;
   }
 }

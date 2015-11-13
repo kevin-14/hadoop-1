@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.apache.hadoop.yarn.api.records.ContainerId;
@@ -33,7 +34,6 @@ import org.apache.hadoop.yarn.api.records.Resource;
 import org.apache.hadoop.yarn.api.records.ResourceRequest;
 import org.apache.hadoop.yarn.server.resourcemanager.rmcontainer.RMContainer;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.SchedulerApplicationAttempt;
-import org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.CapacitySchedulerContext;
 import org.apache.hadoop.yarn.util.Clock;
 import org.apache.hadoop.yarn.util.SystemClock;
 import org.apache.hadoop.yarn.util.resource.ResourceCalculator;
@@ -298,9 +298,17 @@ public class PreemptionManager {
   // beginning of every preemption cycle.
   Set<ContainerId> selectingContainers = new HashSet<>();
   Clock clock = new SystemClock();
+  ReentrantReadWriteLock.ReadLock readLock;
+  ReentrantReadWriteLock.WriteLock writeLock;
   
   // TODO change this to configurable
-  private final static int WAIT_BEFORE_KILL_SEC = 30; 
+  private final static int WAIT_BEFORE_KILL_SEC = 30;
+  
+  public PreemptionManager() {
+    ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+    readLock = lock.readLock();
+    writeLock = lock.writeLock();
+  }
   
   private List<RMContainer> selectContainersToPreempt(List<RMContainer> candidates,
       Resource required, Resource cluster) {
@@ -461,6 +469,20 @@ public class PreemptionManager {
     }
     
     return false;
+  }
+  
+  public void updatePreemptableQueuePartitions(
+      Collection<PreemptableQueuePartitionEntity> entities) {
+    try {
+      writeLock.lock();
+      for (PreemptableQueuePartitionEntity entity : entities) {
+        preemptableEntitiesManager.updatePreemptableQueueEntity(
+            entity.getQueueName(), entity.getPartitionName(), entity.getIdeal(),
+            entity.getPreemptable());
+      }
+    } finally {
+      writeLock.unlock();
+    }
   }
 
   PreemptionType getPreemptionType(ResourceRequirement requirement,
