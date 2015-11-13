@@ -33,6 +33,7 @@ import org.apache.hadoop.yarn.server.resourcemanager.rmcontainer.RMContainer;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.NodeType;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.ResourceLimits;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.SchedulerAppUtils;
+import org.apache.hadoop.yarn.server.resourcemanager.scheduler.SchedulerNode;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.SchedulerUtils;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.CSAssignment;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.SchedulingMode;
@@ -178,7 +179,7 @@ public class RegularContainerAllocator extends AbstractContainerAllocator {
   ContainerAllocation preAllocation(Resource clusterResource,
       FiCaSchedulerNode node, SchedulingMode schedulingMode,
       ResourceLimits resourceLimits, Priority priority,
-      RMContainer reservedContainer) {
+      RMContainer reservedContainer, boolean dryrun) {
     ContainerAllocation result;
     if (null == reservedContainer) {
       // pre-check when allocating new container
@@ -200,7 +201,7 @@ public class RegularContainerAllocator extends AbstractContainerAllocator {
     // Try to allocate containers on node
     result =
         assignContainersOnNode(clusterResource, node, priority,
-            reservedContainer, schedulingMode, resourceLimits);
+            reservedContainer, schedulingMode, resourceLimits, dryrun);
     
     if (null == reservedContainer) {
       if (result.state == AllocationState.PRIORITY_SKIPPED) {
@@ -280,11 +281,12 @@ public class RegularContainerAllocator extends AbstractContainerAllocator {
   private ContainerAllocation assignNodeLocalContainers(
       Resource clusterResource, ResourceRequest nodeLocalResourceRequest,
       FiCaSchedulerNode node, Priority priority, RMContainer reservedContainer,
-      SchedulingMode schedulingMode, ResourceLimits currentResoureLimits) {
+      SchedulingMode schedulingMode, ResourceLimits currentResoureLimits,
+      boolean dryrun) {
     if (canAssign(priority, node, NodeType.NODE_LOCAL, reservedContainer)) {
       return assignContainer(clusterResource, node, priority,
           nodeLocalResourceRequest, NodeType.NODE_LOCAL, reservedContainer,
-          schedulingMode, currentResoureLimits);
+          schedulingMode, currentResoureLimits, dryrun);
     }
 
     // Skip node-local request, go to rack-local request
@@ -294,11 +296,12 @@ public class RegularContainerAllocator extends AbstractContainerAllocator {
   private ContainerAllocation assignRackLocalContainers(
       Resource clusterResource, ResourceRequest rackLocalResourceRequest,
       FiCaSchedulerNode node, Priority priority, RMContainer reservedContainer,
-      SchedulingMode schedulingMode, ResourceLimits currentResoureLimits) {
+      SchedulingMode schedulingMode, ResourceLimits currentResoureLimits,
+      boolean dryrun) {
     if (canAssign(priority, node, NodeType.RACK_LOCAL, reservedContainer)) {
       return assignContainer(clusterResource, node, priority,
           rackLocalResourceRequest, NodeType.RACK_LOCAL, reservedContainer,
-          schedulingMode, currentResoureLimits);
+          schedulingMode, currentResoureLimits, dryrun);
     }
 
     // Skip rack-local request, go to off-switch request
@@ -308,11 +311,12 @@ public class RegularContainerAllocator extends AbstractContainerAllocator {
   private ContainerAllocation assignOffSwitchContainers(
       Resource clusterResource, ResourceRequest offSwitchResourceRequest,
       FiCaSchedulerNode node, Priority priority, RMContainer reservedContainer,
-      SchedulingMode schedulingMode, ResourceLimits currentResoureLimits) {
+      SchedulingMode schedulingMode, ResourceLimits currentResoureLimits,
+      boolean dryrun) {
     if (canAssign(priority, node, NodeType.OFF_SWITCH, reservedContainer)) {
       return assignContainer(clusterResource, node, priority,
           offSwitchResourceRequest, NodeType.OFF_SWITCH, reservedContainer,
-          schedulingMode, currentResoureLimits);
+          schedulingMode, currentResoureLimits, dryrun);
     }
 
     return ContainerAllocation.APP_SKIPPED;
@@ -320,7 +324,7 @@ public class RegularContainerAllocator extends AbstractContainerAllocator {
 
   private ContainerAllocation assignContainersOnNode(Resource clusterResource,
       FiCaSchedulerNode node, Priority priority, RMContainer reservedContainer,
-      SchedulingMode schedulingMode, ResourceLimits currentResoureLimits) {
+      SchedulingMode schedulingMode, ResourceLimits currentResoureLimits, boolean dryrun) {
 
     ContainerAllocation allocation;
 
@@ -333,7 +337,7 @@ public class RegularContainerAllocator extends AbstractContainerAllocator {
       allocation =
           assignNodeLocalContainers(clusterResource, nodeLocalResourceRequest,
               node, priority, reservedContainer, schedulingMode,
-              currentResoureLimits);
+              currentResoureLimits, dryrun);
       if (Resources.greaterThan(rc, clusterResource,
           allocation.getResourceToBeAllocated(), Resources.none())) {
         allocation.requestNodeType = requestType;
@@ -356,7 +360,7 @@ public class RegularContainerAllocator extends AbstractContainerAllocator {
       allocation =
           assignRackLocalContainers(clusterResource, rackLocalResourceRequest,
               node, priority, reservedContainer, schedulingMode,
-              currentResoureLimits);
+              currentResoureLimits, dryrun);
       if (Resources.greaterThan(rc, clusterResource,
           allocation.getResourceToBeAllocated(), Resources.none())) {
         allocation.requestNodeType = requestType;
@@ -379,7 +383,7 @@ public class RegularContainerAllocator extends AbstractContainerAllocator {
       allocation =
           assignOffSwitchContainers(clusterResource, offSwitchResourceRequest,
               node, priority, reservedContainer, schedulingMode,
-              currentResoureLimits);
+              currentResoureLimits, dryrun);
       allocation.requestNodeType = requestType;
       
       // When a returned allocation is LOCALITY_SKIPPED, since we're in
@@ -393,11 +397,65 @@ public class RegularContainerAllocator extends AbstractContainerAllocator {
 
     return ContainerAllocation.PRIORITY_SKIPPED;
   }
+  
+  private boolean tryToPremeptWhenDryrun(ResourceRequest request, Resource cluster,
+      Resource nodeAvailable, SchedulerNode node) {
+    
+  }
+  
+  private boolean checkExcessivePreemption(ResourceRequest request,
+      Resource cluster) {
+    // TODO
+    // Check if the queue which the app belongs to can preempt anything?
+    
+    /* 
+     * Two criterias of excessive preemption:
+     * - #reserved + #preempt(*) > #pending(*)
+     * - #preempt(resourceName) > min(#pending(*), #pending(resourceName), #preemptable)
+     * 
+     * Notes:
+     * - #preemptable is number of containers for this application can preempt, it is 
+     */
+    int numReserved =
+        application.getNumReservedContainers(request.getPriority());
+    int numPending = 
+        Math.round(Resources.divide(rc, cluster, application.getAppAttemptResourceUsage()
+            .getPending(ResourceRequest.ANY), request.getCapability()));
+    int numWillPreemptFromOther = Math.round(Resources.divide(rc, cluster,
+        preemptionManager.getTotalResourcesWillBePreemptedFromOther(
+            application.getApplicationAttemptId(), request.getPriority(),
+            ResourceRequest.ANY),
+        request.getCapability()));
+    
+    if (numReserved + numWillPreemptFromOther > numPending) {
+      return false;
+    }
+    
+    if (!request.getResourceName().equals(ResourceRequest.ANY)) {
+      numPending =
+          Math.min(numPending,
+              Math.round(Resources.divide(
+                  rc, cluster, application.getAppAttemptResourceUsage()
+                      .getPending(request.getResourceName()),
+                  request.getCapability())));
+      numWillPreemptFromOther = Math.round(Resources.divide(rc, cluster,
+          preemptionManager.getTotalResourcesWillBePreemptedFromOther(
+              application.getApplicationAttemptId(), request.getPriority(),
+              request.getResourceName()),
+          request.getCapability()));
+      
+      if (numWillPreemptFromOther > numPending) {
+        return false;
+      }
+    }
+    
+    return true;
+  }
 
   private ContainerAllocation assignContainer(Resource clusterResource,
       FiCaSchedulerNode node, Priority priority, ResourceRequest request,
       NodeType type, RMContainer rmContainer, SchedulingMode schedulingMode,
-      ResourceLimits currentResoureLimits) {
+      ResourceLimits currentResoureLimits, boolean dryrun) {
     lastResourceRequest = request;
     
     if (LOG.isDebugEnabled()) {
@@ -439,6 +497,14 @@ public class RegularContainerAllocator extends AbstractContainerAllocator {
     // Can we allocate a container on this node?
     int availableContainers =
         rc.computeAvailableContainers(available, capability);
+    if (dryrun) {
+      if (availableContainers > 0) {
+        // This node has enough resource, we don't need preempt any container
+        // for next allocation, return LOCALITY_SKIPPED to terminate dryrun
+        return ContainerAllocation.LOCALITY_SKIPPED;
+      }
+    }
+    
 
     // How much need to unreserve equals to:
     // max(required - headroom, amountNeedUnreserve)
@@ -455,7 +521,7 @@ public class RegularContainerAllocator extends AbstractContainerAllocator {
     boolean reservationsContinueLooking =
         application.getCSLeafQueue().getReservationContinueLooking();
 
-    if (availableContainers > 0) {
+    if (availableContainers > 0 || dryrun) {
       // Allocate...
       // We will only do continuous reservation when this is not allocated from
       // reserved container
@@ -489,6 +555,13 @@ public class RegularContainerAllocator extends AbstractContainerAllocator {
           }
         }
       }
+      
+      // When dryrun, check if we have excessive preemption
+      if (dryrun) {
+        if (checkExcessivePreemption(request, clusterResource)) {
+          return ContainerAllocation.LOCALITY_SKIPPED;
+        }
+      }
 
       ContainerAllocation result =
           new ContainerAllocation(unreservedContainer, request.getCapability(),
@@ -510,6 +583,12 @@ public class RegularContainerAllocator extends AbstractContainerAllocator {
             }
             // Skip the locality request
             return ContainerAllocation.LOCALITY_SKIPPED;          
+          }
+        }
+        
+        if (dryrun) {
+          if (checkExcessivePreemption(request, clusterResource)) {
+            return ContainerAllocation.LOCALITY_SKIPPED;
           }
         }
 
@@ -661,7 +740,7 @@ public class RegularContainerAllocator extends AbstractContainerAllocator {
       RMContainer reservedContainer, boolean dryrun) {
     ContainerAllocation result =
         preAllocation(clusterResource, node, schedulingMode, resourceLimits,
-            priority, reservedContainer);
+            priority, reservedContainer, dryrun);
     
     if (dryrun) {
       return result;
