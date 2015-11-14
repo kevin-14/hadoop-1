@@ -1252,7 +1252,12 @@ public class CapacityScheduler extends
     }
 
     // TODO: Should check if we can allocate resource if reserved container
-    // could be preempted.
+    // could be preempted. Currently logic cannot preempt reserved container.
+    // One approach in my mind is:
+    // If the reserved container from a debtor queue, we will set the reserved
+    // container to null temporally. If we can allocate resource to DemandingApp
+    // after unreserve the container, we will drop the reservation immediately.  
+    
     // Try to schedule more if there are no reservations to fulfill
     if (node.getReservedContainer() == null) {
       if (calculator.computeAvailableContainers(node.getAvailableResource(),
