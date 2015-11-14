@@ -378,6 +378,18 @@ public class CapacityScheduler extends
 
   private final static Random random = new Random(System.currentTimeMillis());
   
+  private static boolean dryrunForUpcomingAllocation(FiCaSchedulerNode node) {
+    // Do we need a dryrun to check preemption?
+    // TODO, now hard coded dryrun to once per 10 ticks.
+    long tick = node.addAndGetTick();
+    boolean dryrun = false;
+    if (tick % 10 == 0) {
+      dryrun = true;
+    }
+
+    return dryrun;
+  }
+  
   /**
    * Schedule on all nodes by starting at a random point.
    * @param cs
@@ -389,12 +401,22 @@ public class CapacityScheduler extends
     int start = random.nextInt(nodes.size());
     for (FiCaSchedulerNode node : nodes) {
       if (current++ >= start) {
-        cs.allocateContainersToNode(node);
+        boolean dryrun = CapacityScheduler.dryrunForUpcomingAllocation(node);
+        if (dryrun) {
+          cs.allocateContainersToNode(node, true);
+        }
+        
+        cs.allocateContainersToNode(node, false);
       }
     }
     // Now, just get everyone to be safe
     for (FiCaSchedulerNode node : nodes) {
-      cs.allocateContainersToNode(node);
+      boolean dryrun = CapacityScheduler.dryrunForUpcomingAllocation(node);
+      if (dryrun) {
+        cs.allocateContainersToNode(node, true);
+      }
+      
+      cs.allocateContainersToNode(node, false);
     }
     try {
       Thread.sleep(cs.getAsyncScheduleInterval());
@@ -1161,7 +1183,8 @@ public class CapacityScheduler extends
       .getAssignmentInformation().getReserved());
  }
 
-  private synchronized void allocateContainersToNode(FiCaSchedulerNode node) {
+  private synchronized void allocateContainersToNode(FiCaSchedulerNode node,
+      boolean dryrun) {
     if (rmContext.isWorkPreservingRecoveryEnabled()
         && !rmContext.isSchedulerReadyForAllocatingContainers()) {
       return;
@@ -1175,14 +1198,6 @@ public class CapacityScheduler extends
     // Assign new containers...
     // 1. Check for reserved applications
     // 2. Schedule if there are no reservations
-    
-    // Do we need a dryrun to check preemption?
-    // TODO, now hard coded dryrun to once per 10 ticks.
-    long tick = node.addAndGetTick();
-    boolean dryrun = false;
-    if (tick % 10 == 0) {
-      dryrun = true;
-    }
 
     RMContainer reservedContainer = node.getReservedContainer();
     if (reservedContainer != null) {
@@ -1321,12 +1336,19 @@ public class CapacityScheduler extends
     break;
     case NODE_UPDATE:
     {
-      NodeUpdateSchedulerEvent nodeUpdatedEvent = (NodeUpdateSchedulerEvent)event;
+      NodeUpdateSchedulerEvent nodeUpdatedEvent =
+          (NodeUpdateSchedulerEvent) event;
       RMNode node = nodeUpdatedEvent.getRMNode();
       setLastNodeUpdateTime(Time.now());
       nodeUpdate(node);
       if (!scheduleAsynchronously) {
-        allocateContainersToNode(getNode(node.getNodeID()));
+        FiCaSchedulerNode schedulerNode = getNode(node.getNodeID());
+        boolean dryrun = CapacityScheduler.dryrunForUpcomingAllocation(schedulerNode);
+        if (dryrun) {
+          allocateContainersToNode(schedulerNode, true);
+        }
+
+        allocateContainersToNode(schedulerNode, false);
       }
     }
     break;

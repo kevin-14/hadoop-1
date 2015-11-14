@@ -20,6 +20,7 @@ package org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.preempt
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -117,8 +118,8 @@ public class PreemptionManager {
 
   class PreemptableEntitiesManager {
     private Map<String, PreemptableEntityMeasure> map = new HashMap<>();
-    
-    private PreemptableEntityMeasure getOrAddNew(String key) {
+
+    PreemptableEntityMeasure getOrAddNew(String key) {
       PreemptableEntityMeasure measure = map.get(key);
       if (measure == null) {
         measure = new PreemptableEntityMeasure(key);
@@ -126,8 +127,8 @@ public class PreemptionManager {
       }
       return measure;
     }
-    
-    private PreemptableEntityMeasure get(String key) {
+
+    PreemptableEntityMeasure get(String key) {
       return map.get(key);
     }
 
@@ -137,18 +138,49 @@ public class PreemptionManager {
 
       PreemptableEntityMeasure measure = getOrAddNew(key);
       measure.ideal = ideal;
-      
+
       // When maxPreempt is positive, it means this entity is a debtor
       if (maxPreempt.getMemory() + maxPreempt.getVirtualCores() > 0) {
+        if (!measure.debtor) {
+          // The queue becomes a debtor, if there's any container will be
+          // preempted by apps belong to this queue, unmark them.
+          List<ContainerId> unmarkContainers = new ArrayList<>();
+          for (ToPreemptContainer c : preemptionReleationshipManager.toPreemptContainers
+              .values()) {
+            if (c.resourceRequirement.application.getQueueName()
+                .equals(queue)) {
+              unmarkContainers.add(c.container.getContainerId());
+            }
+          }
+
+          for (ContainerId id : unmarkContainers) {
+            preemptionReleationshipManager.containerCompleted(id);
+          }
+        }
+
         measure.maxPreemptable = maxPreempt;
         measure.debtor = true;
       } else {
-        measure.maxPreemptable = Resources.negate(maxPreempt);
-        measure.debtor = false;
+        // The queue becomes a non-debtor, if there's any container will be
+        // preempted by apps belong to this queue, unmark them.
+        List<ContainerId> unmarkContainers = new ArrayList<>();
+        for (ToPreemptContainer c : preemptionReleationshipManager.toPreemptContainers
+            .values()) {
+          if (c.container.getQueue().equals(queue)) {
+            unmarkContainers.add(c.container.getContainerId());
+          }
+        }
+
+        for (ContainerId id : unmarkContainers) {
+          preemptionReleationshipManager.containerCompleted(id);
+        }
       }
+
+      measure.maxPreemptable = Resources.negate(maxPreempt);
+      measure.debtor = false;
     }
   }
-  
+
   static class DemandingApp {
     ApplicationAttemptId appAttemptId;
     SchedulerApplicationAttempt application;
@@ -297,6 +329,10 @@ public class PreemptionManager {
   // selecting container for this preemption cycle, this will be cleared at
   // beginning of every preemption cycle.
   Set<ContainerId> selectingContainers = new HashSet<>();
+  
+  // To kill container, this will be cleared at every preemption cycle
+  Set<ContainerId> toKillContainers = new HashSet<>();
+  
   Clock clock = new SystemClock();
   ReentrantReadWriteLock.ReadLock readLock;
   ReentrantReadWriteLock.WriteLock writeLock;
@@ -358,7 +394,7 @@ public class PreemptionManager {
     return null;
   }
   
-  public Resource getTotalResourcesWillBePreemptedFromOther(
+  public Resource getTotalResourcesWillBePreemptedByApp(
       ApplicationAttemptId attemptId, Priority priority, String resourceName) {
     if (!preemptionReleationshipManager.demandingApps.containsKey(attemptId)) {
       return Resources.none();
@@ -374,7 +410,7 @@ public class PreemptionManager {
     return res != null ? res : Resources.none();
   }
   
-  public boolean canQueueuPreemptResourceFromOther(Resource cluster,
+  public boolean canQueueuPreemptResourceFromOthers(Resource cluster,
       String queue, String partition, Resource demandingResource) {
     String key = queue + "_" + partition;
     PreemptableEntityMeasure measure = preemptableEntitiesManager.get(key);
@@ -393,10 +429,19 @@ public class PreemptionManager {
     
     return false;
   }
+  
+  @SuppressWarnings("unchecked")
+  public Set<ContainerId> getContainersToKill() {
+    if (toKillContainers.isEmpty()) {
+      return Collections.EMPTY_SET;
+    }
+    return new HashSet<>(toKillContainers);
+  }
 
   public boolean tryToPreempt(ResourceRequirement resourceRequirement,
       Collection<RMContainer> candidatesToPreempt, Resource cluster) {
     selectingContainers.clear();
+    toKillContainers.clear();
     
     List<RMContainer> candidates = getContainers(PreemptionType.DIFFERENT_QUEUE,
         resourceRequirement, candidatesToPreempt);
@@ -447,8 +492,7 @@ public class PreemptionManager {
             
             if (currentTime
                 - toPreemptContainer.startTimestamp > WAIT_BEFORE_KILL_SEC) {
-              // TODO, kill this container
-              continue;
+              toKillContainers.add(c.getContainerId());
             }
             
             // Update last listed timestamp for this container, this will be

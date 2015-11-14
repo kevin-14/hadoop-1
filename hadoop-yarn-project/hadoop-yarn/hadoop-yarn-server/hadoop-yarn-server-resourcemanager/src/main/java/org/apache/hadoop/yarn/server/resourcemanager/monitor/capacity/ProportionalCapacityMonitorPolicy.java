@@ -744,7 +744,9 @@ public class ProportionalCapacityMonitorPolicy implements SchedulingEditPolicy {
           toBePreempted = Resources.multiply(
               Resources.subtract(current, idealAssigned), scalingFactor);
       } else {
-        toBePreempted = Resources.subtract(idealAssigned, current);
+        // ToBePreempted will be a negative value, it means this queue needs to
+        // preempt resource from other queue
+        toBePreempted = Resources.subtract(current, idealAssigned);
       }
     }
 

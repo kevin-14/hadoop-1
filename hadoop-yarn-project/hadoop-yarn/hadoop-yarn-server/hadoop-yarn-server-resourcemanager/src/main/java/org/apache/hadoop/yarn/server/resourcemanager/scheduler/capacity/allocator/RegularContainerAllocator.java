@@ -418,7 +418,7 @@ public class RegularContainerAllocator extends AbstractContainerAllocator {
     // Check if the queue which the app belongs to can preempt anything?
     Resource demanding =
         Resources.subtract(request.getCapability(), nodeAvailable);
-    if (!preemptionManager.canQueueuPreemptResourceFromOther(cluster,
+    if (!preemptionManager.canQueueuPreemptResourceFromOthers(cluster,
         application.getQueueName(), nodePartition, demanding)) {
       return false;
     }
@@ -437,7 +437,7 @@ public class RegularContainerAllocator extends AbstractContainerAllocator {
         Math.round(Resources.divide(rc, cluster, application.getAppAttemptResourceUsage()
             .getPending(ResourceRequest.ANY), request.getCapability()));
     int numWillPreemptFromOther = Math.round(Resources.divide(rc, cluster,
-        preemptionManager.getTotalResourcesWillBePreemptedFromOther(
+        preemptionManager.getTotalResourcesWillBePreemptedByApp(
             application.getApplicationAttemptId(), request.getPriority(),
             ResourceRequest.ANY),
         request.getCapability()));
@@ -454,7 +454,7 @@ public class RegularContainerAllocator extends AbstractContainerAllocator {
                       .getPending(request.getResourceName()),
                   request.getCapability())));
       numWillPreemptFromOther = Math.round(Resources.divide(rc, cluster,
-          preemptionManager.getTotalResourcesWillBePreemptedFromOther(
+          preemptionManager.getTotalResourcesWillBePreemptedByApp(
               application.getApplicationAttemptId(), request.getPriority(),
               request.getResourceName()),
           request.getCapability()));
