@@ -90,6 +90,4 @@ public interface RMContainer extends EventHandler<RMContainerEvent> {
   String getUser();
 
   String getQueue();
-  
-  String getNodeParititon();
 }

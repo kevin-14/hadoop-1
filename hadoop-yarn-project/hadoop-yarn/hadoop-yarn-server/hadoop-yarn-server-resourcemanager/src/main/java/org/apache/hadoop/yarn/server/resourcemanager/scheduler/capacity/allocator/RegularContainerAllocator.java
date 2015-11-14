@@ -410,7 +410,7 @@ public class RegularContainerAllocator extends AbstractContainerAllocator {
     return preemptionManager.tryToPreempt(
         new ResourceRequirement(application, request.getCapability(),
             request.getPriority(), request.getResourceName()),
-        node.getRunningContainers(), cluster);
+        node.getRunningContainers(), cluster, node.getPartition());
   }
   
   private boolean checkExcessivePreemption(ResourceRequest request,

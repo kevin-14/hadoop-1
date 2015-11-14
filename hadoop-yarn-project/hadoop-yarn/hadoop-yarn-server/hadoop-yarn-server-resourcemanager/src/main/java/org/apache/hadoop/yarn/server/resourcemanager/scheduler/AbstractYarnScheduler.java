@@ -431,7 +431,8 @@ public abstract class AbstractYarnScheduler
       }
 
       // create container
-      RMContainer rmContainer = recoverAndCreateContainer(container, nm);
+      RMContainer rmContainer = recoverAndCreateContainer(container, nm,
+          schedulerAttempt.getQueueName());
 
       // recover RMContainer
       rmContainer.handle(new RMContainerRecoverEvent(container.getContainerId(),
@@ -478,7 +479,7 @@ public abstract class AbstractYarnScheduler
   }
 
   private RMContainer recoverAndCreateContainer(NMContainerStatus status,
-      RMNode node) {
+      RMNode node, String queueName) {
     Container container =
         Container.newInstance(status.getContainerId(), node.getNodeID(),
           node.getHttpAddress(), status.getAllocatedResource(),
@@ -488,7 +489,7 @@ public abstract class AbstractYarnScheduler
     RMContainer rmContainer =
         new RMContainerImpl(container, attemptId, node.getNodeID(),
           applications.get(attemptId.getApplicationId()).getUser(), rmContext,
-          status.getCreationTime(), status.getNodeLabelExpression());
+          status.getCreationTime(), status.getNodeLabelExpression(), queueName);
     return rmContainer;
   }
 

@@ -869,6 +869,10 @@ public class CapacityScheduler extends
     LOG.info("Application Attempt " + applicationAttemptId + " is done." +
         " finalState=" + rmAppAttemptFinalState);
     
+    // Tell preemption manager to unmark containers if the app is on the
+    // demanding apps list.
+    preemptionManager.unmarkDemandingApp(applicationAttemptId);
+    
     FiCaSchedulerApp attempt = getApplicationAttempt(applicationAttemptId);
     SchedulerApplication<FiCaSchedulerApp> application =
         applications.get(applicationAttemptId.getApplicationId());
@@ -1181,10 +1185,23 @@ public class CapacityScheduler extends
     schedulerHealth.updateSchedulerRunDetails(now, assignment
       .getAssignmentInformation().getAllocated(), assignment
       .getAssignmentInformation().getReserved());
- }
+  }
+  
+  private synchronized void killPreemptedContainers() {
+    Set<ContainerId> toKillContainerIds =
+        preemptionManager.pullContainersToKill();
+    
+    for (ContainerId id : toKillContainerIds) {
+      killContainer(getRMContainer(id));
+    }
+  }
 
   private synchronized void allocateContainersToNode(FiCaSchedulerNode node,
       boolean dryrun) {
+    if (!dryrun) {
+      killPreemptedContainers();
+    }
+    
     if (rmContext.isWorkPreservingRecoveryEnabled()
         && !rmContext.isSchedulerReadyForAllocatingContainers()) {
       return;
@@ -1220,16 +1237,17 @@ public class CapacityScheduler extends
                   RMNodeLabelsManager.NO_LABEL, clusterResource)),
               SchedulingMode.RESPECT_PARTITION_EXCLUSIVITY, dryrun);
       if (assignment.isFulfilledReservation()) {
-        CSAssignment tmp =
-            new CSAssignment(reservedContainer.getReservedResource(),
-                assignment.getType());
-        Resources.addTo(assignment.getAssignmentInformation().getAllocated(),
-            reservedContainer.getReservedResource());
-        tmp.getAssignmentInformation().addAllocationDetails(
-            reservedContainer.getContainerId(), queue.getQueuePath());
-        tmp.getAssignmentInformation().incrAllocations();
-        updateSchedulerHealth(lastNodeUpdateTime, node, tmp);
-        schedulerHealth.updateSchedulerFulfilledReservationCounts(1);
+        if (!dryrun) {
+          CSAssignment tmp = new CSAssignment(
+              reservedContainer.getReservedResource(), assignment.getType());
+          Resources.addTo(assignment.getAssignmentInformation().getAllocated(),
+              reservedContainer.getReservedResource());
+          tmp.getAssignmentInformation().addAllocationDetails(
+              reservedContainer.getContainerId(), queue.getQueuePath());
+          tmp.getAssignmentInformation().incrAllocations();
+          updateSchedulerHealth(lastNodeUpdateTime, node, tmp);
+          schedulerHealth.updateSchedulerFulfilledReservationCounts(1);
+        }
       }
     }
 
@@ -1254,7 +1272,9 @@ public class CapacityScheduler extends
             SchedulingMode.RESPECT_PARTITION_EXCLUSIVITY, dryrun);
         if (Resources.greaterThan(calculator, clusterResource,
             assignment.getResource(), Resources.none())) {
-          updateSchedulerHealth(lastNodeUpdateTime, node, assignment);
+          if (!dryrun) {
+            updateSchedulerHealth(lastNodeUpdateTime, node, assignment);
+          }
           return;
         }
         
@@ -1523,6 +1543,8 @@ public class CapacityScheduler extends
       return;
     }
     
+    // tell preemptionManager to unmark if a container on the preemption list
+    preemptionManager.unmarkToPreemptContainer(rmContainer.getContainerId());
     Container container = rmContainer.getContainer();
     
     // Get the application for the finished container

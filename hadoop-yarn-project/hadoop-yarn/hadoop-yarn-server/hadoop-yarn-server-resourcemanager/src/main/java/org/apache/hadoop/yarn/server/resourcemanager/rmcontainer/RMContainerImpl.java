@@ -178,26 +178,33 @@ public class RMContainerImpl implements RMContainer, Comparable<RMContainer> {
   private List<ResourceRequest> resourceRequests;
 
   private volatile boolean hasIncreaseReservation = false;
+  private String queueName;
+  private boolean saveNonAMContainerMetaInfo;
   
+  // Used by test only
   public RMContainerImpl(Container container,
       ApplicationAttemptId appAttemptId, NodeId nodeId, String user,
       RMContext rmContext) {
-    this(container, appAttemptId, nodeId, user, rmContext, System
-        .currentTimeMillis(), "");
+    this(container, appAttemptId, nodeId, user, rmContext, "");
   }
-
-  private boolean saveNonAMContainerMetaInfo;
-
+  
   public RMContainerImpl(Container container,
       ApplicationAttemptId appAttemptId, NodeId nodeId, String user,
-      RMContext rmContext, String nodeLabelExpression) {
+      RMContext rmContext, String queueName) {
     this(container, appAttemptId, nodeId, user, rmContext, System
-      .currentTimeMillis(), nodeLabelExpression);
+        .currentTimeMillis(), "", queueName);
   }
 
   public RMContainerImpl(Container container,
       ApplicationAttemptId appAttemptId, NodeId nodeId, String user,
-      RMContext rmContext, long creationTime, String nodeLabelExpression) {
+      RMContext rmContext, String nodeLabelExpression, String queueName) {
+    this(container, appAttemptId, nodeId, user, rmContext, System
+      .currentTimeMillis(), nodeLabelExpression, queueName);
+  }
+
+  public RMContainerImpl(Container container, ApplicationAttemptId appAttemptId,
+      NodeId nodeId, String user, RMContext rmContext, long creationTime,
+      String nodeLabelExpression, String queueName) {
     this.stateMachine = stateMachineFactory.make(this);
     this.containerId = container.getId();
     this.nodeId = nodeId;
@@ -211,6 +218,7 @@ public class RMContainerImpl implements RMContainer, Comparable<RMContainer> {
     this.isAMContainer = false;
     this.resourceRequests = null;
     this.nodeLabelExpression = nodeLabelExpression;
+    this.queueName = queueName;
 
     ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     this.readLock = lock.readLock();
@@ -762,5 +770,17 @@ public class RMContainerImpl implements RMContainer, Comparable<RMContainer> {
   @Override
   public void cancelIncreaseReservation() {
     hasIncreaseReservation = false;
+  }
+
+  @Override
+  public String getUser() {
+    return user;
+  }
+
+  @Override
+  public String getQueue() {
+    // TODO, queueName could be changed if we moved app from one queue to
+    // another, need handle this case also. 
+    return queueName;
   }
 }
