@@ -832,8 +832,10 @@ public class LeafQueue extends AbstractCSQueue {
         CSAssignment assignment = application.assignContainers(clusterResource,
             node, currentResourceLimits, schedulingMode, reservedContainer,
             dryrun);
-        handleExcessReservedContainer(clusterResource, assignment, node,
-            application);
+        if (!dryrun) {
+          handleExcessReservedContainer(clusterResource, assignment, node,
+              application);
+        }
         return assignment;
       }
     }
@@ -890,22 +892,26 @@ public class LeafQueue extends AbstractCSQueue {
 
       // Did we schedule or reserve a container?
       Resource assigned = assignment.getResource();
-      
-      handleExcessReservedContainer(clusterResource, assignment, node,
-          application);
+
+      if (!dryrun) {
+        handleExcessReservedContainer(clusterResource, assignment, node,
+            application);
+      }
 
       if (Resources.greaterThan(resourceCalculator, clusterResource, assigned,
           Resources.none())) {
-        // Get reserved or allocated container from application
-        RMContainer reservedOrAllocatedRMContainer =
-            application.getRMContainer(assignment.getAssignmentInformation()
-                .getFirstAllocatedOrReservedContainerId());
+        if (!dryrun) {
+          // Get reserved or allocated container from application
+          RMContainer reservedOrAllocatedRMContainer = application.getRMContainer(
+              assignment.getAssignmentInformation()
+                  .getFirstAllocatedOrReservedContainerId());
 
-        // Book-keeping
-        // Note: Update headroom to account for current allocation too...
-        allocateResource(clusterResource, application, assigned,
-            node.getPartition(), reservedOrAllocatedRMContainer,
-            assignment.isIncreasedAllocation());
+          // Book-keeping
+          // Note: Update headroom to account for current allocation too...
+          allocateResource(clusterResource, application, assigned,
+              node.getPartition(), reservedOrAllocatedRMContainer,
+              assignment.isIncreasedAllocation());
+        }
 
         // Done
         return assignment;

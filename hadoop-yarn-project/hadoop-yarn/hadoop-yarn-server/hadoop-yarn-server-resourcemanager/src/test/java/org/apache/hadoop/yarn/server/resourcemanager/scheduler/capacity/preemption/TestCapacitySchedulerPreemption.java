@@ -159,6 +159,11 @@ public class TestCapacitySchedulerPreemption {
     Assert.assertEquals(4, pm.toKillContainers.size());
 
     cs.allocateContainersToNode(cs.getNode(nm2.getNodeId()), false);
+    FiCaSchedulerApp schedulerApp2 =
+        cs.getSchedulerApplications().get(app2.getApplicationId())
+            .getCurrentAppAttempt();
+    Assert.assertEquals(1, schedulerApp2.getLiveContainers().size());
+    Assert.assertEquals(4, schedulerApp1.getLiveContainers().size());
 
     rm1.close();
   }
