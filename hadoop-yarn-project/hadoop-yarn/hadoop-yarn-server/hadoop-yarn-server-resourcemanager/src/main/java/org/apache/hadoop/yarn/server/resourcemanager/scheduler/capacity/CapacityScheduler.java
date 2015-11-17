@@ -305,6 +305,7 @@ public class CapacityScheduler extends
     this.labelManager = rmContext.getNodeLabelManager();
     authorizer = YarnAuthorizationProvider.getInstance(yarnConf);
     initializeQueues(this.conf);
+    preemptionManager.queueRefreshed(root);
 
     scheduleAsynchronously = this.conf.getScheduleAynschronously();
     asyncScheduleInterval =
@@ -313,6 +314,9 @@ public class CapacityScheduler extends
     if (scheduleAsynchronously) {
       asyncSchedulerThread = new AsyncScheduleThread(this);
     }
+
+    // Init preemption manager
+    preemptionManager.init(this.calculator);
 
     LOG.info("Initialized CapacityScheduler with " +
         "calculator=" + getResourceCalculator().getClass() + ", " +
@@ -370,6 +374,9 @@ public class CapacityScheduler extends
       refreshMaximumAllocation(this.conf.getMaximumAllocation());
       throw new IOException("Failed to re-init queues", t);
     }
+
+    // Notify preemption manager when queue refreshed.
+    preemptionManager.queueRefreshed(root);
   }
   
   long getAsyncScheduleInterval() {
@@ -1196,7 +1203,8 @@ public class CapacityScheduler extends
     }
   }
 
-  private synchronized void allocateContainersToNode(FiCaSchedulerNode node,
+  @VisibleForTesting
+  public synchronized void allocateContainersToNode(FiCaSchedulerNode node,
       boolean dryrun) {
     if (!dryrun) {
       killPreemptedContainers();
@@ -1261,7 +1269,7 @@ public class CapacityScheduler extends
     // Try to schedule more if there are no reservations to fulfill
     if (node.getReservedContainer() == null) {
       if (calculator.computeAvailableContainers(node.getAvailableResource(),
-        minimumAllocation) > 0) {
+        minimumAllocation) > 0 || dryrun) {
         if (LOG.isDebugEnabled()) {
           LOG.debug("Trying to schedule on node: " + node.getNodeName() +
               ", available: " + node.getAvailableResource());

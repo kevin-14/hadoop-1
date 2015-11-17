@@ -51,7 +51,7 @@ public class IncreaseContainerAllocator extends AbstractContainerAllocator {
 
   public IncreaseContainerAllocator(FiCaSchedulerApp application,
       ResourceCalculator rc, RMContext rmContext) {
-    super(application, rc, rmContext);
+    super(application, rc, rmContext, null);
   }
   
   /**

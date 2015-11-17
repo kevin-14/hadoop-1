@@ -44,14 +44,15 @@ public abstract class AbstractContainerAllocator {
   FiCaSchedulerApp application;
   final ResourceCalculator rc;
   final RMContext rmContext;
-  // TODO, get PreemptionManager from somewhere
   PreemptionManager preemptionManager = null;
-  
+
   public AbstractContainerAllocator(FiCaSchedulerApp application,
-      ResourceCalculator rc, RMContext rmContext) {
+      ResourceCalculator rc, RMContext rmContext,
+      PreemptionManager preemptionMgr) {
     this.application = application;
     this.rc = rc;
     this.rmContext = rmContext;
+    this.preemptionManager = preemptionMgr;
   }
 
   protected CSAssignment getCSAssignmentFromAllocateResult(

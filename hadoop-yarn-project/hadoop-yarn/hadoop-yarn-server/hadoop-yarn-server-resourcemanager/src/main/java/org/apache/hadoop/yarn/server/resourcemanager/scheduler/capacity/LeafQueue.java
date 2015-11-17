@@ -810,6 +810,12 @@ public class LeafQueue extends AbstractCSQueue {
   public synchronized CSAssignment assignContainers(Resource clusterResource,
       FiCaSchedulerNode node, ResourceLimits currentResourceLimits,
       SchedulingMode schedulingMode, boolean dryrun) {
+    // Overwrite resource limit to INF, when we doing preemption check (dryrun = true),
+    // we will check calculated max-preemptable resource, which already
+    // considered parents' guaranteed/max resource.
+    if (dryrun) {
+      currentResourceLimits.setLimit(Resources.unbounded());
+    }
     updateCurrentResourceLimits(currentResourceLimits, clusterResource);
 
     if (LOG.isDebugEnabled()) {

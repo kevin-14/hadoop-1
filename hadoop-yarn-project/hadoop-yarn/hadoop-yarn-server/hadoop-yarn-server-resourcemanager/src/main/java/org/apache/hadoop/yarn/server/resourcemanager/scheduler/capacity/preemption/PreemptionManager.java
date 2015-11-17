@@ -23,8 +23,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -34,7 +36,9 @@ import org.apache.hadoop.yarn.api.records.Priority;
 import org.apache.hadoop.yarn.api.records.Resource;
 import org.apache.hadoop.yarn.api.records.ResourceRequest;
 import org.apache.hadoop.yarn.server.resourcemanager.rmcontainer.RMContainer;
+import org.apache.hadoop.yarn.server.resourcemanager.scheduler.ResourceUsage;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.SchedulerApplicationAttempt;
+import org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.CSQueue;
 import org.apache.hadoop.yarn.util.Clock;
 import org.apache.hadoop.yarn.util.SystemClock;
 import org.apache.hadoop.yarn.util.resource.ResourceCalculator;
@@ -167,10 +171,10 @@ public class PreemptionManager {
         for (ContainerId id : unmarkContainers) {
           preemptionReleationshipManager.unmarkToPreemptContainer(id);
         }
-      }
 
-      measure.maxPreemptable = Resources.negate(maxPreempt);
-      measure.debtor = false;
+        measure.maxPreemptable = Resources.negate(maxPreempt);
+        measure.debtor = false;
+      }
     }
   }
 
@@ -323,8 +327,11 @@ public class PreemptionManager {
   // beginning of every preemption cycle.
   Set<ContainerId> selectingContainers = new HashSet<>();
   
-  // To kill containers
+  // To-be-killed containers
   Set<ContainerId> toKillContainers = new HashSet<>();
+
+  // ResourceUsages
+  Map<String, ResourceUsage> queueResourceUsages = new HashMap<>();
   
   Clock clock = new SystemClock();
   ReentrantReadWriteLock.ReadLock readLock;
@@ -337,6 +344,31 @@ public class PreemptionManager {
     ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     readLock = lock.readLock();
     writeLock = lock.writeLock();
+  }
+
+  public void init(ResourceCalculator rc) {
+    this.rc = rc;
+  }
+
+  private boolean canPreempt(Resource cluster, Resource markedPreempted,
+      Resource maxPreemptable, Resource current, Resource ideal,
+      Resource newCandidate) {
+    Resource totalMarkedPreemptedResourceIfSelected =
+        Resources.add(markedPreempted, newCandidate);
+
+    if (Resources.fitsIn(rc, cluster, totalMarkedPreemptedResourceIfSelected,
+        maxPreemptable) || Resources
+        .equals(markedPreempted, Resources.none())) {
+      // We allow total-marked-to-be-preempted resource less than max-preemptable
+      // OR one container
+      if (Resources.fitsIn(rc, cluster, totalMarkedPreemptedResourceIfSelected,
+          Resources.subtract(current, ideal))) {
+        // In addition, total-marked-preempted should <= current - ideal
+        return true;
+      }
+    }
+
+    return false;
   }
   
   private List<RMContainer> selectContainersToPreempt(List<RMContainer> candidates,
@@ -364,15 +396,15 @@ public class PreemptionManager {
       
       Resource markedPreempted =
           measure.getTotalMarkedPreemptedForDryRun(timestamp);
-      Resource markedPreemptedIfCandidateSelected = Resources
-          .add(markedPreempted, candidateContainer.getAllocatedResource());
       
       // We get enough preemption headroom for the candidate
-      if (Resources.lessThanOrEqual(rc, cluster,
-          markedPreemptedIfCandidateSelected,
+      ResourceUsage queueResourceUsage =
+          queueResourceUsages.get(candidateContainer.getQueue());
+      if (canPreempt(cluster, markedPreempted, measure.maxPreemptable,
+          queueResourceUsage.getUsed(nodePartition), measure.ideal,
           candidateContainer.getAllocatedResource())) {
-        Resources.addTo(markedPreempted,
-            candidateContainer.getAllocatedResource());
+        Resources
+            .addTo(markedPreempted, candidateContainer.getAllocatedResource());
         selected.add(candidateContainer);
       }
       
@@ -544,6 +576,35 @@ public class PreemptionManager {
       writeLock.lock();
       preemptionReleationshipManager.unmarkDemandingApp(attempId);
     } finally{
+      writeLock.unlock();
+    }
+  }
+
+  private void updateResourceUsages(CSQueue root) {
+    queueResourceUsages.clear();
+
+    Queue<CSQueue> bfsQueue = new LinkedList<>();
+    bfsQueue.offer(root);
+    while (!bfsQueue.isEmpty()) {
+      CSQueue cur = bfsQueue.remove();
+
+      if (null == cur.getChildQueues() || cur.getChildQueues().isEmpty()) {
+        // add ResourceUsage of leaf queues to map
+        queueResourceUsages.put(cur.getQueueName(), cur.getQueueResourceUsage());
+      } else {
+        // add children to bfs queue
+        for (CSQueue q : cur.getChildQueues()) {
+          bfsQueue.offer(q);
+        }
+      }
+    }
+  }
+
+  public void queueRefreshed(CSQueue root) {
+    try {
+      writeLock.lock();
+      updateResourceUsages(root);
+    } finally {
       writeLock.unlock();
     }
   }

@@ -25,6 +25,7 @@ import org.apache.hadoop.yarn.server.resourcemanager.rmcontainer.RMContainerStat
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.ResourceLimits;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.CSAssignment;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.SchedulingMode;
+import org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.preemption.PreemptionManager;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.common.fica.FiCaSchedulerApp;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.common.fica.FiCaSchedulerNode;
 import org.apache.hadoop.yarn.util.resource.ResourceCalculator;
@@ -35,13 +36,13 @@ public class ContainerAllocator extends AbstractContainerAllocator {
   AbstractContainerAllocator regularContainerAllocator;
 
   public ContainerAllocator(FiCaSchedulerApp application,
-      ResourceCalculator rc, RMContext rmContext) {
-    super(application, rc, rmContext);
+      ResourceCalculator rc, RMContext rmContext, PreemptionManager preemptionMgr) {
+    super(application, rc, rmContext, preemptionMgr);
 
     increaseContainerAllocator =
         new IncreaseContainerAllocator(application, rc, rmContext);
     regularContainerAllocator =
-        new RegularContainerAllocator(application, rc, rmContext);
+        new RegularContainerAllocator(application, rc, rmContext, preemptionMgr);
   }
 
   @Override

@@ -38,6 +38,7 @@ import org.apache.hadoop.yarn.server.resourcemanager.scheduler.SchedulerNode;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.SchedulerUtils;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.CSAssignment;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.SchedulingMode;
+import org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.preemption.PreemptionManager;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.preemption.ResourceRequirement;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.common.fica.FiCaSchedulerApp;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.common.fica.FiCaSchedulerNode;
@@ -53,10 +54,11 @@ public class RegularContainerAllocator extends AbstractContainerAllocator {
   private static final Log LOG = LogFactory.getLog(RegularContainerAllocator.class);
   
   private ResourceRequest lastResourceRequest = null;
-  
+
   public RegularContainerAllocator(FiCaSchedulerApp application,
-      ResourceCalculator rc, RMContext rmContext) {
-    super(application, rc, rmContext);
+      ResourceCalculator rc, RMContext rmContext,
+      PreemptionManager preemptionMgr) {
+    super(application, rc, rmContext, preemptionMgr);
   }
   
   private boolean checkHeadroom(Resource clusterResource,
@@ -503,8 +505,11 @@ public class RegularContainerAllocator extends AbstractContainerAllocator {
       return ContainerAllocation.LOCALITY_SKIPPED;
     }
 
-    assert Resources.greaterThan(
-        rc, clusterResource, available, Resources.none());
+    if (!dryrun) {
+      // Only assert this condition if we're not dryrun
+      assert Resources
+          .greaterThan(rc, clusterResource, available, Resources.none());
+    }
 
     boolean shouldAllocOrReserveNewContainer = shouldAllocOrReserveNewContainer(
         priority, capability);

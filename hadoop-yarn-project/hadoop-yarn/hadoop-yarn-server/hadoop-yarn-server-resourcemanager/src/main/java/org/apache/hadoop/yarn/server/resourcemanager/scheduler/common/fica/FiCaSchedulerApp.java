@@ -61,6 +61,7 @@ import org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.LeafQueu
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.SchedulingMode;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.allocator.ContainerAllocator;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.allocator.AbstractContainerAllocator;
+import org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.preemption.PreemptionManager;
 import org.apache.hadoop.yarn.util.resource.DefaultResourceCalculator;
 import org.apache.hadoop.yarn.util.resource.ResourceCalculator;
 import org.apache.hadoop.yarn.util.resource.Resources;
@@ -127,8 +128,14 @@ public class FiCaSchedulerApp extends SchedulerApplicationAttempt {
     if (scheduler.getResourceCalculator() != null) {
       rc = scheduler.getResourceCalculator();
     }
-    
-    containerAllocator = new ContainerAllocator(this, rc, rmContext);
+
+    PreemptionManager preemptionManager = null;
+    if (scheduler instanceof CapacityScheduler) {
+      preemptionManager =
+          ((CapacityScheduler) scheduler).getPreemptionManager();
+    }
+    containerAllocator =
+        new ContainerAllocator(this, rc, rmContext, preemptionManager);
   }
 
   synchronized public boolean containerCompleted(RMContainer rmContainer,

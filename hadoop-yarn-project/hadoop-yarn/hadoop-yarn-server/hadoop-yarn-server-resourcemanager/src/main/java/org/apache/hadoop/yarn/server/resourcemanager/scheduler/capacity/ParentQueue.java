@@ -405,7 +405,7 @@ public class ParentQueue extends AbstractCSQueue {
     Resource nodeAvailClone = Resources.clone(node.getAvailableResource());
     
     try {
-      while (canAssign(clusterResource, node)) {
+      while (canAssign(clusterResource, node, dryrun)) {
         if (LOG.isDebugEnabled()) {
           LOG.debug("Trying to assign containers to child-queue of "
               + getQueueName());
@@ -413,9 +413,12 @@ public class ParentQueue extends AbstractCSQueue {
 
         // Are we over maximum-capacity for this queue?
         // This will also consider parent's limits and also continuous
-        // reservation
-        // looking
-        if (!super.canAssignToThisQueue(clusterResource, node.getPartition(),
+        // reservation looking
+
+        // Don't check this if we're parent queue, when we doing preemption,
+        // we will check calculated max-preemptable resource, which already
+        // considered parents' guaranteed/max resource.
+        if (!dryrun && !super.canAssignToThisQueue(clusterResource, node.getPartition(),
             resourceLimits,
             Resources.createResource(getMetrics().getReservedMB(),
                 getMetrics().getReservedVirtualCores()),
@@ -516,10 +519,14 @@ public class ParentQueue extends AbstractCSQueue {
     return assignment;
   }
 
-  private boolean canAssign(Resource clusterResource, FiCaSchedulerNode node) {
-    return (node.getReservedContainer() == null) && 
-        Resources.greaterThanOrEqual(resourceCalculator, clusterResource, 
-            node.getAvailableResource(), minimumAllocation);
+  private boolean canAssign(Resource clusterResource, FiCaSchedulerNode node,
+      boolean dryrun) {
+    return (node.getReservedContainer() == null)
+        // Dryrun doesn't check if node's available resource can allocate at
+        // least one contaienr, we assume some containers could be preempted
+        // from this node 
+        && (Resources.greaterThanOrEqual(resourceCalculator, clusterResource,
+            node.getAvailableResource(), minimumAllocation) || dryrun);
   }
   
   private ResourceLimits getResourceLimitsOfChild(CSQueue child,
