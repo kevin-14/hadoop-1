@@ -51,4 +51,17 @@ public class ResourceRequirement {
   public String getResourceName() {
     return resourceName;
   }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (!(obj instanceof ResourceRequirement)) {
+      return false;
+    }
+
+    ResourceRequirement other = (ResourceRequirement)obj;
+
+    return application == other.application && required.equals(other.required)
+        && priority.equals(other.priority) && resourceName
+        .equals(other.resourceName);
+  }
 }

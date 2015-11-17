@@ -152,10 +152,10 @@ public class ProportionalCapacityMonitorPolicy implements SchedulingEditPolicy {
     preemptionManager = scheduler.getPreemptionManager(); 
     maxIgnoredOverCapacity = config.getDouble(MAX_IGNORED_OVER_CAPACITY, 0.1);
     naturalTerminationFactor =
-      config.getDouble(NATURAL_TERMINATION_FACTOR, 0.2);
+      config.getDouble(NATURAL_TERMINATION_FACTOR, 1.0);
     monitoringInterval = config.getLong(MONITORING_INTERVAL, 3000);
     percentageClusterPreemptionAllowed =
-      config.getFloat(TOTAL_PREEMPTION_PER_ROUND, (float) 0.1);
+      config.getFloat(TOTAL_PREEMPTION_PER_ROUND, (float) 1.0);
     rc = scheduler.getResourceCalculator();
     nlm = scheduler.getRMContext().getNodeLabelManager();
   }

@@ -23,9 +23,13 @@ import org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.Capacity
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.TestUtils;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.common.fica.FiCaSchedulerApp;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.event.NodeUpdateSchedulerEvent;
+import org.apache.hadoop.yarn.util.Clock;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class TestCapacitySchedulerPreemption {
   private static final Log LOG = LogFactory
@@ -36,6 +40,8 @@ public class TestCapacitySchedulerPreemption {
   private YarnConfiguration conf;
   
   RMNodeLabelsManager mgr;
+
+  Clock clock;
 
   @Before
   public void setUp() throws Exception {
@@ -48,8 +54,10 @@ public class TestCapacitySchedulerPreemption {
         SchedulingEditPolicy.class);
     mgr = new NullRMNodeLabelsManager();
     mgr.init(conf);
+    clock = mock(Clock.class);
+    when(clock.getTime()).thenReturn(0L);
   }
-  
+
   private SchedulingEditPolicy getSchedulingEditPolicy(MockRM rm) {
     RMActiveServices activeServices = rm.getRMActiveService();
     SchedulingMonitor mon = null;
@@ -110,7 +118,7 @@ public class TestCapacitySchedulerPreemption {
       cs.handle(new NodeUpdateSchedulerEvent(rmNode2));
     }
     
-    // App2 should have 8 containers now, and no available resource for cluster
+    // App1 should have 8 containers now, and no available resource for cluster
     FiCaSchedulerApp schedulerApp1 =
         cs.getApplicationAttempt(am1.getApplicationAttemptId());
 
@@ -125,11 +133,12 @@ public class TestCapacitySchedulerPreemption {
     
     // Submit app2 to queue-b and asks for a 4G container for AM
     RMApp app2 = rm1.submitApp(4 * GB, "app", "user", null, "b");
-    
+
     // Get edit policy and do one update
     SchedulingEditPolicy editPolicy = getSchedulingEditPolicy(rm1);
     editPolicy.editSchedule();
     PreemptionManager pm = cs.getPreemptionManager();
+    pm.setClock(clock);
     
     // Do a dryrun node update for nm1
     // It shouldn't update to-preempt container since AM container is on nm1 
@@ -142,6 +151,14 @@ public class TestCapacitySchedulerPreemption {
     cs.allocateContainersToNode(cs.getNode(nm2.getNodeId()), true);
     Assert.assertEquals(4,
         pm.preemptionReleationshipManager.toPreemptContainers.size());
+
+    // After wait-before-kill time, do another dryrun for nm2, check if containers added
+    // to to-kill list
+    when(clock.getTime()).thenReturn(pm.getWaitBeforeKillMs() + 1);
+    cs.allocateContainersToNode(cs.getNode(nm2.getNodeId()), true);
+    Assert.assertEquals(4, pm.toKillContainers.size());
+
+    cs.allocateContainersToNode(cs.getNode(nm2.getNodeId()), false);
 
     rm1.close();
   }

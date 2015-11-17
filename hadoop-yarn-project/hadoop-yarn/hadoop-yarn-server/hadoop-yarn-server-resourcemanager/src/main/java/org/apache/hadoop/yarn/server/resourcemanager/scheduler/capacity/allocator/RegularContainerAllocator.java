@@ -408,6 +408,11 @@ public class RegularContainerAllocator extends AbstractContainerAllocator {
         node.getPartition())) {
       return false;
     }
+
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("check excessive preemption passed for queue=" + application
+          .getQueue());
+    }
     
     return preemptionManager.tryToPreempt(
         new ResourceRequirement(application, request.getCapability(),
@@ -418,10 +423,9 @@ public class RegularContainerAllocator extends AbstractContainerAllocator {
   private boolean checkExcessivePreemption(ResourceRequest request,
       Resource cluster, Resource nodeAvailable, String nodePartition) {
     // Check if the queue which the app belongs to can preempt anything?
-    Resource demanding =
-        Resources.subtract(request.getCapability(), nodeAvailable);
-    if (!preemptionManager.canQueueuPreemptResourceFromOthers(cluster,
-        application.getQueueName(), nodePartition, demanding)) {
+    if (!preemptionManager
+        .canQueueuPreemptResourceFromOthers(application.getQueueName(),
+            nodePartition)) {
       return false;
     }
     
@@ -435,9 +439,7 @@ public class RegularContainerAllocator extends AbstractContainerAllocator {
      */
     int numReserved =
         application.getNumReservedContainers(request.getPriority());
-    int numPending = 
-        Math.round(Resources.divide(rc, cluster, application.getAppAttemptResourceUsage()
-            .getPending(ResourceRequest.ANY), request.getCapability()));
+    int numPending = application.getTotalRequiredResources(request.getPriority());
     int numWillPreemptFromOther = Math.round(Resources.divide(rc, cluster,
         preemptionManager.getTotalResourcesWillBePreemptedByApp(
             application.getApplicationAttemptId(), request.getPriority(),

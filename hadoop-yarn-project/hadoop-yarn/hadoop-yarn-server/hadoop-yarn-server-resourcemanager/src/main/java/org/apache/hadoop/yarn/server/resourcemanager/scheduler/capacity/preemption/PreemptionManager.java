@@ -30,6 +30,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.api.records.Priority;
@@ -198,6 +199,7 @@ public class PreemptionManager {
       
       toPreemptContainers = new HashMap<>();
       toPreemptResources = new HashMap<>();
+      containerIdToToPreemptResource = new HashMap<>();
     }
     
     private Resource getOrAddNewResource(Priority priority, String resourceName) {
@@ -318,24 +320,24 @@ public class PreemptionManager {
     }
   }
   
-  ResourceCalculator rc;
+  private ResourceCalculator rc;
   PreemptableEntitiesManager preemptableEntitiesManager =
       new PreemptableEntitiesManager();
   PreemptionRelationshipManager preemptionReleationshipManager =
       new PreemptionRelationshipManager();
   // selecting container for this preemption cycle, this will be cleared at
   // beginning of every preemption cycle.
-  Set<ContainerId> selectingContainers = new HashSet<>();
+  private Set<ContainerId> selectingContainers = new HashSet<>();
   
   // To-be-killed containers
   Set<ContainerId> toKillContainers = new HashSet<>();
 
   // ResourceUsages
-  Map<String, ResourceUsage> queueResourceUsages = new HashMap<>();
+  private Map<String, ResourceUsage> queueResourceUsages = new HashMap<>();
   
-  Clock clock = new SystemClock();
-  ReentrantReadWriteLock.ReadLock readLock;
-  ReentrantReadWriteLock.WriteLock writeLock;
+  private Clock clock = new SystemClock();
+  private ReentrantReadWriteLock.ReadLock readLock;
+  private ReentrantReadWriteLock.WriteLock writeLock;
   
   // TODO change this to configurable
   private final static int WAIT_BEFORE_KILL_SEC = 30;
@@ -348,6 +350,11 @@ public class PreemptionManager {
 
   public void init(ResourceCalculator rc) {
     this.rc = rc;
+  }
+
+  @VisibleForTesting
+  public void setClock(Clock clock) {
+    this.clock = clock;
   }
 
   private boolean canPreempt(Resource cluster, Resource markedPreempted,
@@ -379,7 +386,9 @@ public class PreemptionManager {
     // Scan the list to select which containers to be preempted.
     Resource totalSelected = Resources.createResource(0);
     List<RMContainer> selected = new ArrayList<>();
-    
+
+    // TODO
+    // Should sort candidates, selected containers should come before other containers
     for (RMContainer candidateContainer : candidates) {
       // Skip all AM containers OR already selected containers
       if (candidateContainer.isAMContainer() || selectingContainers
@@ -396,6 +405,15 @@ public class PreemptionManager {
       
       Resource markedPreempted =
           measure.getTotalMarkedPreemptedForDryRun(timestamp);
+
+      // If the container is on our to-preempt list, deduct it from marked-to-preempt
+      // first (assume this container will not be preempted this time)
+      // Marked-to-preempt-resource will add resource of the container if it is selected.
+      if (preemptionReleationshipManager.toPreemptContainers
+          .containsKey(candidateContainer.getContainerId())) {
+        Resources.subtractFrom(markedPreempted,
+            candidateContainer.getAllocatedResource());
+      }
       
       // We get enough preemption headroom for the candidate
       ResourceUsage queueResourceUsage =
@@ -406,12 +424,12 @@ public class PreemptionManager {
         Resources
             .addTo(markedPreempted, candidateContainer.getAllocatedResource());
         selected.add(candidateContainer);
-      }
-      
-      // update total resource as well
-      Resources.addTo(totalSelected, candidateContainer.getAllocatedResource());
-      if (Resources.fitsIn(rc, cluster, required, totalSelected)) {
-        return selected;
+
+        // update total resource as well
+        Resources.addTo(totalSelected, candidateContainer.getAllocatedResource());
+        if (Resources.fitsIn(rc, cluster, required, totalSelected)) {
+          return selected;
+        }
       }
     }
     
@@ -433,22 +451,13 @@ public class PreemptionManager {
     Resource res = app.toPreemptResources.get(priority).get(resourceName);
     return res != null ? res : Resources.none();
   }
-  
-  public boolean canQueueuPreemptResourceFromOthers(Resource cluster,
-      String queue, String partition, Resource demandingResource) {
+
+  public boolean canQueueuPreemptResourceFromOthers(String queue,
+      String partition) {
     String key = queue + "_" + partition;
     PreemptableEntityMeasure measure = preemptableEntitiesManager.get(key);
     if (measure != null) {
-      if (measure.debtor) {
-        // Obviously, debtor cannot preempt resource from others
-        return false;
-      }
-      
-      Resource headroom = Resources.subtract(measure.maxPreemptable,
-          measure.totalMarkedPreempted);
-      if (Resources.fitsIn(rc, cluster, demandingResource, headroom)) {
-        return true;
-      }
+      return !measure.debtor;
     }
     
     return false;
@@ -468,6 +477,11 @@ public class PreemptionManager {
     } finally {
       writeLock.unlock();
     }
+  }
+
+  @VisibleForTesting
+  public long getWaitBeforeKillMs() {
+    return WAIT_BEFORE_KILL_SEC * 30;
   }
 
   public boolean tryToPreempt(ResourceRequirement resourceRequirement,
