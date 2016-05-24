@@ -111,6 +111,7 @@ import org.apache.hadoop.yarn.server.resourcemanager.scheduler.SchedulerUtils;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.preemption.KillableContainer;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.preemption.PreemptionManager;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.common.AssignmentInformation;
+import org.apache.hadoop.yarn.server.resourcemanager.scheduler.common.NodeCandidates;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.common.QueueEntitlement;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.common.fica.FiCaSchedulerApp;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.common.fica.FiCaSchedulerNode;
@@ -1245,7 +1246,7 @@ public class CapacityScheduler extends
       assignment =
           queue.assignContainers(
               getClusterResource(),
-              node,
+              new NodeCandidates(node, null, node.getPartition()),
               // TODO, now we only consider limits for parent for non-labeled
               // resources, should consider labeled resources as well.
               new ResourceLimits(labelManager.getResourceByLabel(
@@ -1278,7 +1279,8 @@ public class CapacityScheduler extends
 
         assignment = root.assignContainers(
             getClusterResource(),
-            node,
+            new NodeCandidates<>(node, getAllNodes(),
+                node.getPartition()),
             new ResourceLimits(labelManager.getResourceByLabel(
                 node.getPartition(), getClusterResource())),
             SchedulingMode.RESPECT_PARTITION_EXCLUSIVITY);
@@ -1309,7 +1311,8 @@ public class CapacityScheduler extends
         // Try to use NON_EXCLUSIVE
         assignment = root.assignContainers(
             getClusterResource(),
-            node,
+            new NodeCandidates<>(node, getAllNodes(),
+                node.getPartition()),
             // TODO, now we only consider limits for parent for non-labeled
             // resources, should consider labeled resources as well.
             new ResourceLimits(labelManager.getResourceByLabel(

@@ -1077,4 +1077,8 @@ public class CapacitySchedulerConfiguration extends ReservationSchedulerConfigur
       PREEMPTION_CONFIG_PREFIX + "select_based_on_reserved_containers";
   public static final boolean DEFAULT_PREEMPTION_SELECT_CANDIDATES_FOR_RESERVED_CONTAINERS =
       false;
+
+  public static final String ENABLE_GLOBAL_SCHEDULING =
+      PREFIX + "global-scheduling-enabled";
+  public static final boolean DEFAULT_GLOBAL_SCHEDULING_ENABLED = false;
 }

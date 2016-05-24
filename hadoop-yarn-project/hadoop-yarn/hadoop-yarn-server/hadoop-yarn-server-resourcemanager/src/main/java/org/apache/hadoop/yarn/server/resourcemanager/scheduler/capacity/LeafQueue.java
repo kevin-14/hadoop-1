@@ -20,6 +20,7 @@ package org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -29,6 +30,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
+import com.google.common.collect.Lists;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -68,6 +70,7 @@ import org.apache.hadoop.yarn.server.resourcemanager.scheduler.SchedulerApplicat
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.SchedulerHealth;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.SchedulerUtils;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.preemption.KillableContainer;
+import org.apache.hadoop.yarn.server.resourcemanager.scheduler.common.NodeCandidates;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.common.fica.FiCaSchedulerApp;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.common.fica.FiCaSchedulerNode;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.policy.FifoOrderingPolicyForPendingApps;
@@ -807,9 +810,12 @@ public class LeafQueue extends AbstractCSQueue {
   }
   
   private void handleExcessReservedContainer(Resource clusterResource,
-      CSAssignment assignment, FiCaSchedulerNode node, FiCaSchedulerApp app) {
+      CSAssignment assignment) {
     if (assignment.getExcessReservation() != null) {
       RMContainer excessReservedContainer = assignment.getExcessReservation();
+      FiCaSchedulerNode node = csContext.getNode(
+          excessReservedContainer.getReservedNode());
+      FiCaSchedulerApp app = assignment.getApplication();
       
       if (excessReservedContainer.hasIncreaseReservation()) {
         unreserveIncreasedContainer(clusterResource,
@@ -829,7 +835,6 @@ public class LeafQueue extends AbstractCSQueue {
   }
 
   private void killToPreemptContainers(Resource clusterResource,
-      FiCaSchedulerNode node,
       CSAssignment assignment) {
     if (assignment.getContainersToKill() != null) {
       StringBuilder sb = new StringBuilder("Killing containers: [");
@@ -838,6 +843,7 @@ public class LeafQueue extends AbstractCSQueue {
         FiCaSchedulerApp application = csContext.getApplicationAttempt(
             c.getApplicationAttemptId());
         LeafQueue q = application.getCSLeafQueue();
+        FiCaSchedulerNode node = csContext.getNode(c.getAllocatedNode());
         q.completedContainer(clusterResource, application, node, c, SchedulerUtils
                 .createPreemptedContainerStatus(c.getContainerId(),
                     SchedulerUtils.PREEMPTED_CONTAINER), RMContainerEventType.KILL,
@@ -861,50 +867,64 @@ public class LeafQueue extends AbstractCSQueue {
     float guaranteedCapacity = queueCapacities.getAbsoluteCapacity(nodePartition);
     limits.setIsAllowPreemption(usedCapacity < guaranteedCapacity);
   }
-  
-  @Override
-  public synchronized CSAssignment assignContainers(Resource clusterResource,
-      FiCaSchedulerNode node, ResourceLimits currentResourceLimits,
-      SchedulingMode schedulingMode) {
-    updateCurrentResourceLimits(currentResourceLimits, clusterResource);
 
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("assignContainers: node=" + node.getNodeName()
-          + " #applications=" + orderingPolicy.getNumSchedulableEntities());
-    }
-
-    setPreemptionAllowed(currentResourceLimits, node.getPartition());
-
-    // Check for reserved resources
-    RMContainer reservedContainer = node.getReservedContainer();
+  private synchronized CSAssignment handleReservedContainer(
+      Resource clusterResource, NodeCandidates nodeCandidatesFilter,
+      ResourceLimits currentResourceLimits, SchedulingMode schedulingMode) {
+    RMContainer reservedContainer =
+        nodeCandidatesFilter.getNextAvailable().getReservedContainer();
     if (reservedContainer != null) {
       FiCaSchedulerApp application =
           getApplication(reservedContainer.getApplicationAttemptId());
       synchronized (application) {
         CSAssignment assignment =
-            application.assignContainers(clusterResource, node,
+            application.assignContainers(clusterResource, nodeCandidatesFilter,
                 currentResourceLimits, schedulingMode, reservedContainer);
-        handleExcessReservedContainer(clusterResource, assignment, node,
-            application);
-        killToPreemptContainers(clusterResource, node, assignment);
+        handleExcessReservedContainer(clusterResource, assignment);
+        killToPreemptContainers(clusterResource, assignment);
         return assignment;
       }
     }
 
+    return null;
+  }
+  
+  @Override
+  public synchronized CSAssignment assignContainers(Resource clusterResource,
+      NodeCandidates nodeCandidatesFilter, ResourceLimits currentResourceLimits,
+      SchedulingMode schedulingMode) {
+    updateCurrentResourceLimits(currentResourceLimits, clusterResource);
+
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("assignContainers: nodePartition=" + nodeCandidatesFilter
+          .getPartition() + " #applications=" + orderingPolicy
+          .getNumSchedulableEntities());
+    }
+
+    setPreemptionAllowed(currentResourceLimits,
+        nodeCandidatesFilter.getPartition());
+
+    // Check for reserved resources
+    CSAssignment assignment = handleReservedContainer(clusterResource,
+        nodeCandidatesFilter, currentResourceLimits, schedulingMode);
+    if (null != assignment) {
+      return assignment;
+    }
+
     // if our queue cannot access this node, just return
     if (schedulingMode == SchedulingMode.RESPECT_PARTITION_EXCLUSIVITY
-        && !accessibleToPartition(node.getPartition())) {
+        && !accessibleToPartition(nodeCandidatesFilter.getPartition())) {
       return CSAssignment.NULL_ASSIGNMENT;
     }
 
     // Check if this queue need more resource, simply skip allocation if this
     // queue doesn't need more resources.
-    if (!hasPendingResourceRequest(node.getPartition(), clusterResource,
-        schedulingMode)) {
+    if (!hasPendingResourceRequest(nodeCandidatesFilter.getPartition(),
+        clusterResource, schedulingMode)) {
       if (LOG.isDebugEnabled()) {
         LOG.debug("Skip this queue=" + getQueuePath()
             + ", because it doesn't need more resource, schedulingMode="
-            + schedulingMode.name() + " node-partition=" + node.getPartition());
+            + schedulingMode.name() + " node-partition=" + nodeCandidatesFilter.getPartition());
       }
       return CSAssignment.NULL_ASSIGNMENT;
     }
@@ -914,7 +934,7 @@ public class LeafQueue extends AbstractCSQueue {
       FiCaSchedulerApp application = assignmentIterator.next();
 
       // Check queue max-capacity limit
-      if (!super.canAssignToThisQueue(clusterResource, node.getPartition(),
+      if (!super.canAssignToThisQueue(clusterResource, nodeCandidatesFilter.getPartition(),
           currentResourceLimits, application.getCurrentReservation(),
           schedulingMode)) {
         return CSAssignment.NULL_ASSIGNMENT;
@@ -922,20 +942,19 @@ public class LeafQueue extends AbstractCSQueue {
       
       Resource userLimit =
           computeUserLimitAndSetHeadroom(application, clusterResource,
-              node.getPartition(), schedulingMode);
+              nodeCandidatesFilter.getPartition(), schedulingMode);
 
       // Check user limit
       if (!canAssignToUser(clusterResource, application.getUser(), userLimit,
-          application, node.getPartition(), currentResourceLimits)) {
+          application, nodeCandidatesFilter.getPartition(), currentResourceLimits)) {
         application.updateAMContainerDiagnostics(AMState.ACTIVATED,
             "User capacity has reached its maximum limit.");
         continue;
       }
 
       // Try to schedule
-      CSAssignment assignment =
-          application.assignContainers(clusterResource, node,
-              currentResourceLimits, schedulingMode, null);
+      assignment = application.assignContainers(clusterResource,
+          nodeCandidatesFilter, currentResourceLimits, schedulingMode, null);
 
       if (LOG.isDebugEnabled()) {
         LOG.debug("post-assignContainers for application "
@@ -946,9 +965,8 @@ public class LeafQueue extends AbstractCSQueue {
       // Did we schedule or reserve a container?
       Resource assigned = assignment.getResource();
       
-      handleExcessReservedContainer(clusterResource, assignment, node,
-          application);
-      killToPreemptContainers(clusterResource, node, assignment);
+      handleExcessReservedContainer(clusterResource, assignment);
+      killToPreemptContainers(clusterResource, assignment);
 
       if (Resources.greaterThan(resourceCalculator, clusterResource, assigned,
           Resources.none())) {
@@ -960,20 +978,21 @@ public class LeafQueue extends AbstractCSQueue {
         // Book-keeping
         // Note: Update headroom to account for current allocation too...
         allocateResource(clusterResource, application, assigned,
-            node.getPartition(), reservedOrAllocatedRMContainer,
+            nodeCandidatesFilter.getPartition(), reservedOrAllocatedRMContainer,
             assignment.isIncreasedAllocation());
 
         // Update reserved metrics
         Resource reservedRes = assignment.getAssignmentInformation()
             .getReserved();
         if (reservedRes != null && !reservedRes.equals(Resources.none())) {
-          incReservedResource(node.getPartition(), reservedRes);
+          incReservedResource(nodeCandidatesFilter.getPartition(), reservedRes);
         }
 
         // Done
         return assignment;
       } else if (assignment.getSkipped()) {
-        application.updateNodeInfoForAMDiagnostics(node);
+        application.updateNodeInfoForAMDiagnostics(
+            (FiCaSchedulerNode) nodeCandidatesFilter.getNextAvailable());
       } else {
         // If we don't allocate anything, and it is not skipped by application,
         // we will return to respect FIFO of applications

@@ -65,6 +65,7 @@ import org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.QueueCap
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.SchedulingMode;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.allocator.AbstractContainerAllocator;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.allocator.ContainerAllocator;
+import org.apache.hadoop.yarn.server.resourcemanager.scheduler.common.NodeCandidates;
 import org.apache.hadoop.yarn.util.resource.DefaultResourceCalculator;
 import org.apache.hadoop.yarn.util.resource.ResourceCalculator;
 import org.apache.hadoop.yarn.util.resource.Resources;
@@ -491,7 +492,7 @@ public class FiCaSchedulerApp extends SchedulerApplicationAttempt {
   }
   
   public CSAssignment assignContainers(Resource clusterResource,
-      FiCaSchedulerNode node, ResourceLimits currentResourceLimits,
+      NodeCandidates nodeCandidatesFilter, ResourceLimits currentResourceLimits,
       SchedulingMode schedulingMode, RMContainer reservedContainer) {
     if (LOG.isDebugEnabled()) {
       LOG.debug("pre-assignContainers for application "
@@ -500,7 +501,8 @@ public class FiCaSchedulerApp extends SchedulerApplicationAttempt {
     }
 
     synchronized (this) {
-      return containerAllocator.assignContainers(clusterResource, node,
+      return containerAllocator.assignContainers(clusterResource,
+          nodeCandidatesFilter,
           schedulingMode, currentResourceLimits, reservedContainer);
     }
   }
@@ -602,5 +604,9 @@ public class FiCaSchedulerApp extends SchedulerApplicationAttempt {
       diagnosticMessageBldr.append(" ).");
       updateAMContainerDiagnostics(AMState.ACTIVATED, diagnosticMessageBldr.toString());
     }
+  }
+
+  public CapacitySchedulerContext getCapacitySchedulerContext() {
+    return capacitySchedulerContext;
   }
 }

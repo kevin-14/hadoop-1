@@ -1242,7 +1242,7 @@ public class TestCapacityScheduler {
     rm1.stop();
   }
   
-  @Test(timeout = 30000)
+  @Test(timeout = 300000)
   public void testRecoverRequestAfterPreemption() throws Exception {
     Configuration conf = new Configuration();
     conf.setClass(YarnConfiguration.RM_SCHEDULER, CapacityScheduler.class,

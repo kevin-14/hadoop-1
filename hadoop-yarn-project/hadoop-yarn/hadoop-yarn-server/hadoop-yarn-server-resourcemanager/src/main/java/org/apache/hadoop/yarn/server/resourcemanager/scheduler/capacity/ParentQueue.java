@@ -37,7 +37,6 @@ import org.apache.hadoop.yarn.api.records.Resource;
 import org.apache.hadoop.yarn.exceptions.InvalidResourceRequestException;
 import org.apache.hadoop.yarn.factories.RecordFactory;
 import org.apache.hadoop.yarn.factory.providers.RecordFactoryProvider;
-import org.apache.hadoop.yarn.nodelabels.RMNodeLabel;
 import org.apache.hadoop.yarn.security.AccessType;
 import org.apache.hadoop.yarn.server.resourcemanager.nodelabels.RMNodeLabelsManager;
 import org.apache.hadoop.yarn.server.resourcemanager.rmcontainer.RMContainer;
@@ -49,6 +48,7 @@ import org.apache.hadoop.yarn.server.resourcemanager.scheduler.ResourceLimits;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.SchedContainerChangeRequest;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.SchedulerApplicationAttempt;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.SchedulerUtils;
+import org.apache.hadoop.yarn.server.resourcemanager.scheduler.common.NodeCandidates;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.common.fica.FiCaSchedulerApp;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.common.fica.FiCaSchedulerNode;
 import org.apache.hadoop.yarn.util.resource.Resources;
@@ -383,35 +383,37 @@ public class ParentQueue extends AbstractCSQueue {
 
   @Override
   public synchronized CSAssignment assignContainers(Resource clusterResource,
-      FiCaSchedulerNode node, ResourceLimits resourceLimits,
+      NodeCandidates nodeCandidatesFilter, ResourceLimits resourceLimits,
       SchedulingMode schedulingMode) {
+    String partition = nodeCandidatesFilter.getPartition();
+
     // if our queue cannot access this node, just return
     if (schedulingMode == SchedulingMode.RESPECT_PARTITION_EXCLUSIVITY
-        && !accessibleToPartition(node.getPartition())) {
+        && !accessibleToPartition(nodeCandidatesFilter.getPartition())) {
       if (LOG.isDebugEnabled()) {
         LOG.debug("Skip this queue=" + getQueuePath()
-            + ", because it is not able to access partition=" + node
-            .getPartition());
+            + ", because it is not able to access partition=" + partition);
       }
       return CSAssignment.NULL_ASSIGNMENT;
     }
     
     // Check if this queue need more resource, simply skip allocation if this
     // queue doesn't need more resources.
-    if (!super.hasPendingResourceRequest(node.getPartition(),
-        clusterResource, schedulingMode)) {
+    if (!super.hasPendingResourceRequest(partition, clusterResource,
+        schedulingMode)) {
       if (LOG.isDebugEnabled()) {
         LOG.debug("Skip this queue=" + getQueuePath()
             + ", because it doesn't need more resource, schedulingMode="
-            + schedulingMode.name() + " node-partition=" + node.getPartition());
+            + schedulingMode.name() + " node-partition=" + partition);
       }
       return CSAssignment.NULL_ASSIGNMENT;
     }
     
     CSAssignment assignment = 
         new CSAssignment(Resources.createResource(0, 0), NodeType.NODE_LOCAL);
-    
-    while (canAssign(clusterResource, node)) {
+
+    while (canAssign(clusterResource,
+        (FiCaSchedulerNode) nodeCandidatesFilter.getNextAvailable())) {
       if (LOG.isDebugEnabled()) {
         LOG.debug("Trying to assign containers to child-queue of "
           + getQueueName());
@@ -420,7 +422,7 @@ public class ParentQueue extends AbstractCSQueue {
       // Are we over maximum-capacity for this queue?
       // This will also consider parent's limits and also continuous reservation
       // looking
-      if (!super.canAssignToThisQueue(clusterResource, node.getPartition(),
+      if (!super.canAssignToThisQueue(clusterResource, partition,
           resourceLimits, Resources.createResource(
               getMetrics().getReservedMB(), getMetrics()
                   .getReservedVirtualCores()), schedulingMode)) {
@@ -429,7 +431,7 @@ public class ParentQueue extends AbstractCSQueue {
       
       // Schedule
       CSAssignment assignedToChild =
-          assignContainersToChildQueues(clusterResource, node, resourceLimits,
+          assignContainersToChildQueues(clusterResource, nodeCandidatesFilter, resourceLimits,
               schedulingMode);
       assignment.setType(assignedToChild.getType());
       
@@ -439,7 +441,7 @@ public class ParentQueue extends AbstractCSQueue {
               assignedToChild.getResource(), Resources.none())) {
         // Track resource utilization for the parent-queue
         allocateResource(clusterResource, assignedToChild.getResource(),
-            node.getPartition(), assignedToChild.isIncreasedAllocation());
+            partition, assignedToChild.isIncreasedAllocation());
         
         // Track resource utilization in this pass of the scheduler
         Resources
@@ -500,6 +502,9 @@ public class ParentQueue extends AbstractCSQueue {
     return assignment;
   }
 
+  // FIXME:
+  // Only check next-node.available resource only at root queue, and check queue's
+  // available resource for partition
   private boolean canAssign(Resource clusterResource, FiCaSchedulerNode node) {
     // Two conditions need to meet when trying to allocate:
     // 1) Node doesn't have reserved container
@@ -546,8 +551,8 @@ public class ParentQueue extends AbstractCSQueue {
     return new ResourceLimits(childLimit);
   }
   
-  private Iterator<CSQueue> sortAndGetChildrenAllocationIterator(FiCaSchedulerNode node) {
-    if (node.getPartition().equals(RMNodeLabelsManager.NO_LABEL)) {
+  private Iterator<CSQueue> sortAndGetChildrenAllocationIterator(String partition) {
+    if (partition.equals(RMNodeLabelsManager.NO_LABEL)) {
       if (needToResortQueuesAtNextAllocation) {
         // If we skipped resort queues last time, we need to re-sort queue
         // before allocation
@@ -559,23 +564,25 @@ public class ParentQueue extends AbstractCSQueue {
       return childQueues.iterator();
     }
 
-    partitionQueueComparator.setPartitionToLookAt(node.getPartition());
+    partitionQueueComparator.setPartitionToLookAt(partition);
     List<CSQueue> childrenList = new ArrayList<>(childQueues);
     Collections.sort(childrenList, partitionQueueComparator);
     return childrenList.iterator();
   }
-  
+
   private synchronized CSAssignment assignContainersToChildQueues(
-      Resource cluster, FiCaSchedulerNode node, ResourceLimits limits,
-      SchedulingMode schedulingMode) {
+      Resource cluster, NodeCandidates nodeCandidatesFilter,
+      ResourceLimits limits, SchedulingMode schedulingMode) {
+    String partition = nodeCandidatesFilter.getPartition();
+
     CSAssignment assignment = 
         new CSAssignment(Resources.createResource(0, 0), NodeType.NODE_LOCAL);
     
     printChildQueues();
 
     // Try to assign to most 'under-served' sub-queue
-    for (Iterator<CSQueue> iter = sortAndGetChildrenAllocationIterator(node); iter
-        .hasNext();) {
+    for (Iterator<CSQueue> iter = sortAndGetChildrenAllocationIterator(
+        partition); iter.hasNext(); ) {
       CSQueue childQueue = iter.next();
       if(LOG.isDebugEnabled()) {
         LOG.debug("Trying to assign to queue: " + childQueue.getQueuePath()
@@ -584,9 +591,9 @@ public class ParentQueue extends AbstractCSQueue {
 
       // Get ResourceLimits of child queue before assign containers
       ResourceLimits childLimits =
-          getResourceLimitsOfChild(childQueue, cluster, limits, node.getPartition());
+          getResourceLimitsOfChild(childQueue, cluster, limits, partition);
       
-      assignment = childQueue.assignContainers(cluster, node, 
+      assignment = childQueue.assignContainers(cluster, nodeCandidatesFilter,
           childLimits, schedulingMode);
       if(LOG.isDebugEnabled()) {
         LOG.debug("Assigned to queue: " + childQueue.getQueuePath() +
@@ -600,7 +607,7 @@ public class ParentQueue extends AbstractCSQueue {
               assignment.getResource(), Resources.none())) {
         // Only update childQueues when we doing non-partitioned node
         // allocation.
-        if (RMNodeLabelsManager.NO_LABEL.equals(node.getPartition())) {
+        if (RMNodeLabelsManager.NO_LABEL.equals(partition)) {
           // Remove and re-insert to sort
           iter.remove();
           LOG.info("Re-sorting assigned queue: " + childQueue.getQueuePath()

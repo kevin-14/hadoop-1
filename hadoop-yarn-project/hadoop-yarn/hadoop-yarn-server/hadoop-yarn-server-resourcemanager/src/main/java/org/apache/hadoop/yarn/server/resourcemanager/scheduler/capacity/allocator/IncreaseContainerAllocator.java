@@ -40,6 +40,7 @@ import org.apache.hadoop.yarn.server.resourcemanager.scheduler.SchedContainerCha
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.SchedulerNode;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.CSAssignment;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.SchedulingMode;
+import org.apache.hadoop.yarn.server.resourcemanager.scheduler.common.NodeCandidates;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.common.fica.FiCaSchedulerApp;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.common.fica.FiCaSchedulerNode;
 import org.apache.hadoop.yarn.util.resource.ResourceCalculator;
@@ -172,17 +173,17 @@ public class IncreaseContainerAllocator extends AbstractContainerAllocator {
 
   @Override
   public CSAssignment assignContainers(Resource clusterResource,
-      FiCaSchedulerNode node, SchedulingMode schedulingMode,
+      NodeCandidates nodeCandidatesFilter, SchedulingMode schedulingMode,
       ResourceLimits resourceLimits, RMContainer reservedContainer) {
     AppSchedulingInfo sinfo = application.getAppSchedulingInfo();
-    NodeId nodeId = node.getNodeID();
+    NodeId nodeId = nodeCandidatesFilter.getNextAvailable().getNodeID();
 
     if (reservedContainer == null) {
       // Do we have increase request on this node?
       if (!sinfo.hasIncreaseRequest(nodeId)) {
         if (LOG.isDebugEnabled()) {
           LOG.debug("Skip allocating increase request since we don't have any"
-              + " increase request on this node=" + node.getNodeID());
+              + " increase request on this node=" + nodeId);
         }
         
         return CSAssignment.SKIP_ASSIGNMENT;
@@ -291,7 +292,8 @@ public class IncreaseContainerAllocator extends AbstractContainerAllocator {
           }
 
           if (!Resources.fitsIn(rc, clusterResource,
-              increaseRequest.getTargetCapacity(), node.getTotalResource())) {
+              increaseRequest.getTargetCapacity(),
+              nodeCandidatesFilter.getNextAvailable().getTotalResource())) {
             // if the target capacity is more than what the node can offer, we
             // will simply remove and skip it.
             // The reason of doing check here instead of adding increase request
@@ -299,15 +301,18 @@ public class IncreaseContainerAllocator extends AbstractContainerAllocator {
             // request added.
             if (LOG.isDebugEnabled()) {
               LOG.debug("  Target capacity is more than what node can offer,"
-                  + " node.resource=" + node.getTotalResource());
+                  + " node.resource=" + nodeCandidatesFilter.getNextAvailable()
+                  .getTotalResource());
             }
             toBeRemovedRequests.add(increaseRequest);
             continue;
           }
 
           // Try to allocate the increase request
-          assigned =
-              allocateIncreaseRequest(node, clusterResource, increaseRequest);
+          assigned = allocateIncreaseRequest(
+              (FiCaSchedulerNode) nodeCandidatesFilter.getNextAvailable(),
+              clusterResource,
+              increaseRequest);
           if (!assigned.getSkipped()) {
             // When we don't skip this request, which means we either allocated
             // OR reserved this request. We will break
@@ -357,9 +362,9 @@ public class IncreaseContainerAllocator extends AbstractContainerAllocator {
         // We don't need this container now, just return excessive reservation
         return new CSAssignment(application, reservedContainer);
       }
-      
-      return allocateIncreaseRequestFromReservedContainer(node, clusterResource,
-          request);
+
+      return allocateIncreaseRequestFromReservedContainer(
+          nodeCandidatesFilter.getNextAvailable(), clusterResource, request);
     }
   }
 }
