@@ -312,6 +312,14 @@ public abstract class ResourceRequest implements Comparable<ResourceRequest> {
   @Public
   @Evolving
   public abstract void setNodeLabelExpression(String nodelabelExpression);
+
+  @Public
+  @Evolving
+  public abstract String getPlacementStrategy();
+
+  @Public
+  @Evolving
+  public abstract void setPlacementStrategy(String placementStrategy);
   
   @Override
   public int hashCode() {

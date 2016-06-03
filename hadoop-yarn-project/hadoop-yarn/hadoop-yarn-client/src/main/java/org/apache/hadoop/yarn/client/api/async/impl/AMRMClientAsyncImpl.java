@@ -192,6 +192,8 @@ extends AMRMClientAsync<T> {
    * @param req Resource request
    */
   public void addContainerRequest(T req) {
+    //DEBUG
+    System.out.println("XXX  " + req.toString());
     client.addContainerRequest(req);
   }
 

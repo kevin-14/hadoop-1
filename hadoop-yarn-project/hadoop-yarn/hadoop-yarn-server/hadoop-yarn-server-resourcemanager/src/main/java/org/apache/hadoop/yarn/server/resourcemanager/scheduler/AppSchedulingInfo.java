@@ -49,6 +49,7 @@ import org.apache.hadoop.yarn.server.resourcemanager.RMServerUtils;
 import org.apache.hadoop.yarn.server.resourcemanager.nodelabels.RMNodeLabelsManager;
 import org.apache.hadoop.yarn.server.resourcemanager.rmcontainer.RMContainer;
 import org.apache.hadoop.yarn.server.resourcemanager.rmcontainer.RMContainerState;
+import org.apache.hadoop.yarn.server.resourcemanager.scheduler.common.RMPlacementStrategy;
 import org.apache.hadoop.yarn.util.resource.Resources;
 
 /**
@@ -77,6 +78,9 @@ public class AppSchedulingInfo {
   private final Set<String> amBlacklist = new HashSet<>();
   private Set<String> userBlacklist = new HashSet<>();
   private Set<String> requestedPartitions = new HashSet<>();
+
+  private Map<Priority, RMPlacementStrategy> placementStrategyMap =
+      new HashMap<>();
 
   final Set<Priority> priorities = new TreeSet<>(COMPARATOR);
   final Map<Priority, Map<String, ResourceRequest>> resourceRequestMap =
@@ -361,6 +365,15 @@ public class AppSchedulingInfo {
 
         // Update pendingResources
         updatePendingResources(lastRequest, request, queue.getMetrics());
+
+        // Update placement strategy
+        RMPlacementStrategy strategy = RMPlacementStrategy.fromString(
+            request.getPlacementStrategy());
+
+        //DEBUG
+        System.out.println(
+            "request.placement_strategy:" + request.getPlacementStrategy());
+        placementStrategyMap.put(priority, strategy);
       }
     }
     return anyResourcesUpdated;
@@ -813,5 +826,11 @@ public class AppSchedulingInfo {
             request.getResourceName(), request.getCapability(), 1,
             request.getRelaxLocality(), request.getNodeLabelExpression());
     return newRequest;
+  }
+
+  public synchronized RMPlacementStrategy getPlacementStrategy(
+      Priority priority) {
+    RMPlacementStrategy s = placementStrategyMap.get(priority);
+    return s == null ? RMPlacementStrategy.fromString(null) : s;
   }
 }

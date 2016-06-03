@@ -261,9 +261,11 @@ public class AMRMClientImpl<T extends ContainerRequest> extends AMRMClient<T> {
         for(ResourceRequest r : ask) {
           // create a copy of ResourceRequest as we might change it while the 
           // RPC layer is using it to send info across
-          askList.add(ResourceRequest.newInstance(r.getPriority(),
+          ResourceRequest tmp = ResourceRequest.newInstance(r.getPriority(),
               r.getResourceName(), r.getCapability(), r.getNumContainers(),
-              r.getRelaxLocality(), r.getNodeLabelExpression()));
+              r.getRelaxLocality(), r.getNodeLabelExpression());
+          tmp.setPlacementStrategy(r.getPlacementStrategy());
+          askList.add(tmp);
         }
         List<ContainerResourceChangeRequest> increaseList = new ArrayList<>();
         List<ContainerResourceChangeRequest> decreaseList = new ArrayList<>();
@@ -481,6 +483,9 @@ public class AMRMClientImpl<T extends ContainerRequest> extends AMRMClient<T> {
   
   @Override
   public synchronized void addContainerRequest(T req) {
+    //DEBUG
+    System.out.println(req.toString());
+
     Preconditions.checkArgument(req != null,
         "Resource request can not be null.");
     Set<String> dedupedRacks = new HashSet<String>();
@@ -518,25 +523,27 @@ public class AMRMClientImpl<T extends ContainerRequest> extends AMRMClient<T> {
       }
       for (String node : dedupedNodes) {
         addResourceRequest(req.getPriority(), node, req.getCapability(), req,
-            true, req.getNodeLabelExpression());
+            true, req.getNodeLabelExpression(), req.getPlacementStrategy());
       }
     }
 
     for (String rack : dedupedRacks) {
       addResourceRequest(req.getPriority(), rack, req.getCapability(), req,
-          true, req.getNodeLabelExpression());
+          true, req.getNodeLabelExpression(), req.getPlacementStrategy());
     }
 
     // Ensure node requests are accompanied by requests for
     // corresponding rack
     for (String rack : inferredRacks) {
       addResourceRequest(req.getPriority(), rack, req.getCapability(), req,
-          req.getRelaxLocality(), req.getNodeLabelExpression());
+          req.getRelaxLocality(), req.getNodeLabelExpression(),
+          req.getPlacementStrategy());
     }
 
     // Off-switch
-    addResourceRequest(req.getPriority(), ResourceRequest.ANY, 
-        req.getCapability(), req, req.getRelaxLocality(), req.getNodeLabelExpression());
+    addResourceRequest(req.getPriority(), ResourceRequest.ANY,
+        req.getCapability(), req, req.getRelaxLocality(),
+        req.getNodeLabelExpression(), req.getPlacementStrategy());
   }
 
   @Override
@@ -750,7 +757,7 @@ public class AMRMClientImpl<T extends ContainerRequest> extends AMRMClient<T> {
   private void
       addResourceRequest(Priority priority, String resourceName,
           Resource capability, T req, boolean relaxLocality,
-          String labelExpression) {
+          String labelExpression, String placementStrategy) {
     Map<String, TreeMap<Resource, ResourceRequestInfo>> remoteRequests =
       this.remoteRequestsTable.get(priority);
     if (remoteRequests == null) {
@@ -786,16 +793,21 @@ public class AMRMClientImpl<T extends ContainerRequest> extends AMRMClient<T> {
     
     if (ResourceRequest.ANY.equals(resourceName)) {
       resourceRequestInfo.remoteRequest.setNodeLabelExpression(labelExpression);
+      resourceRequestInfo.remoteRequest.setPlacementStrategy(placementStrategy);
     }
 
     // Note this down for next interaction with ResourceManager
     addResourceRequestToAsk(resourceRequestInfo.remoteRequest);
 
+    //DEBUG
+    System.err.println("placement_strategy=" + resourceRequestInfo.remoteRequest
+        .getPlacementStrategy());
+
     if (LOG.isDebugEnabled()) {
       LOG.debug("addResourceRequest:" + " applicationId="
           + " priority=" + priority.getPriority()
           + " resourceName=" + resourceName + " numContainers="
-          + resourceRequestInfo.remoteRequest.getNumContainers() 
+          + resourceRequestInfo.remoteRequest.getNumContainers()
           + " #asks=" + ask.size());
     }
   }

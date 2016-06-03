@@ -5,6 +5,7 @@ import org.apache.hadoop.yarn.api.records.Priority;
 import org.apache.hadoop.yarn.api.records.ResourceRequest;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.SchedulerApplicationAttempt;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.SchedulerNode;
+import org.apache.hadoop.yarn.server.resourcemanager.scheduler.common.RMPlacementStrategy;
 
 import java.util.Map;
 
@@ -19,6 +20,17 @@ public class SchedulerNodesScorerCache {
       SchedulerApplicationAttempt attempt, Priority priority) {
     Map<String, ResourceRequest> requests = attempt.getResourceRequests(
         priority);
+
+    // Check placement strategy
+    RMPlacementStrategy ps =
+        attempt.getAppSchedulingInfo().getPlacementStrategy(priority);
+
+    //DEBUG
+    System.out.println("Placement Strategy:" + ps.getOp());
+
+    if (RMPlacementStrategy.Operator.NO != ps.getOp()) {
+      return SchedulerNodesScorerType.AFFINITY_OR_ANTIAFFNITY;
+    }
 
     // Simplest rule to determine with nodes scorer will be used:
     // When requested #resourceName > 0, use locality, otherwise use DO_NOT_CARE
@@ -56,6 +68,9 @@ public class SchedulerNodesScorerCache {
         break;
       case DO_NOT_CARE:
         scorer = new DoNotCareNodesScorer<>();
+        break;
+      case AFFINITY_OR_ANTIAFFNITY:
+        scorer = new AffinityOrAntiAffinityScorer(attempt, priority);
         break;
       default:
         return null;

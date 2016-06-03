@@ -306,6 +306,7 @@ message ResourceRequestProto {
   optional bool relax_locality = 5 [default = true];
   optional string node_label_expression = 6;
   optional ExecutionTypeRequestProto execution_type_request = 7;
+  optional string placement_strategy = 8;
 }
 
 message ExecutionTypeRequestProto {

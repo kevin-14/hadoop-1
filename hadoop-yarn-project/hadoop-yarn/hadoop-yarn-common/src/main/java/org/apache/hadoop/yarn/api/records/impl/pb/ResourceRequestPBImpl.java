@@ -235,4 +235,23 @@ public class ResourceRequestPBImpl extends  ResourceRequest {
     }
     builder.setNodeLabelExpression(nodeLabelExpression);
   }
+
+  @Override
+  public String getPlacementStrategy() {
+    ResourceRequestProtoOrBuilder p = viaProto ? proto : builder;
+    if (!p.hasPlacementStrategy()) {
+      return null;
+    }
+    return (p.getPlacementStrategy());
+  }
+
+  @Override
+  public void setPlacementStrategy(String placementStrategy) {
+    maybeInitBuilder();
+    if (placementStrategy == null) {
+      builder.clearPlacementStrategy();
+      return;
+    }
+    builder.setPlacementStrategy(placementStrategy);
+  }
 }

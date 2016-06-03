@@ -197,6 +197,8 @@ public class Client {
 
   public static final String SCRIPT_PATH = "ExecScript";
 
+  private String placementStrategy;
+
   /**
    * @param args Command line arguments 
    */
@@ -302,6 +304,8 @@ public class Client {
         "If container could retry, it specifies max retires");
     opts.addOption("container_retry_interval", true,
         "Interval between each retry, unit is milliseconds");
+    opts.addOption("placement_strategy", true,
+        "Placement Strategy for task containers");
   }
 
   /**
@@ -460,6 +464,9 @@ public class Client {
     if (cliParser.hasOption("container_retry_interval")) {
       containerRetryOptions.add("--container_retry_interval "
           + cliParser.getOptionValue("container_retry_interval"));
+    }
+    if (cliParser.hasOption("placement_strategy")) {
+      placementStrategy = cliParser.getOptionValue("placement_strategy");
     }
 
     return true;
@@ -672,6 +679,10 @@ public class Client {
     }
 
     vargs.addAll(containerRetryOptions);
+
+    if (placementStrategy != null) {
+      vargs.add("--placement_strategy \"" + placementStrategy + "\"");
+    }
 
     vargs.add("1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/AppMaster.stdout");
     vargs.add("2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/AppMaster.stderr");

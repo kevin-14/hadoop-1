@@ -81,6 +81,7 @@ import org.apache.hadoop.yarn.api.records.ContainerRetryContext;
 import org.apache.hadoop.yarn.api.records.ContainerRetryPolicy;
 import org.apache.hadoop.yarn.api.records.ContainerState;
 import org.apache.hadoop.yarn.api.records.ContainerStatus;
+import org.apache.hadoop.yarn.api.records.ExecutionType;
 import org.apache.hadoop.yarn.api.records.FinalApplicationStatus;
 import org.apache.hadoop.yarn.api.records.LocalResource;
 import org.apache.hadoop.yarn.api.records.LocalResourceType;
@@ -300,6 +301,8 @@ public class ApplicationMaster {
 
   private int yarnShellIdCounter = 1;
 
+  private String placementStrategy = null;
+
   @VisibleForTesting
   protected final Set<ContainerId> launchedContainers =
       Collections.newSetFromMap(new ConcurrentHashMap<ContainerId, Boolean>());
@@ -401,6 +404,7 @@ public class ApplicationMaster {
     opts.addOption("container_retry_interval", true,
         "Interval between each retry, unit is milliseconds");
     opts.addOption("debug", false, "Dump out debug information");
+    opts.addOption("placement_strategy", true, "Set placement strategy");
 
     opts.addOption("help", false, "Print usage");
     CommandLine cliParser = new GnuParser().parse(opts, args);
@@ -537,6 +541,9 @@ public class ApplicationMaster {
     }
     requestPriority = Integer.parseInt(cliParser
         .getOptionValue("priority", "0"));
+
+    placementStrategy = cliParser.getOptionValue("placement_strategy");
+    LOG.info("placement-strategy:" + placementStrategy);
 
     containerRetryPolicy = ContainerRetryPolicy.values()[
         Integer.parseInt(cliParser.getOptionValue(
@@ -1149,8 +1156,8 @@ public class ApplicationMaster {
     Resource capability = Resource.newInstance(containerMemory,
       containerVirtualCores);
 
-    ContainerRequest request = new ContainerRequest(capability, null, null,
-        pri);
+    ContainerRequest request = new ContainerRequest(capability, null, null, pri,
+        true, null, ExecutionType.GUARANTEED, placementStrategy);
     LOG.info("Requested container ask: " + request.toString());
     return request;
   }
