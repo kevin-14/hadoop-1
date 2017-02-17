@@ -87,6 +87,18 @@ public class ResourceHandlerModule {
     return cGroupsHandler;
   }
 
+  private static NvidiaGpuResourceHandlerImpl getNvidiaGpuResourceHandler(
+      Configuration conf) throws ResourceHandlerException {
+    boolean cgroupsNvidiaEnabled = conf.getBoolean(
+        YarnConfiguration.NM_NVIDIA_GPU_RESOURCE_ENABLED,
+        YarnConfiguration.DEFAULT_NM_NVIDIA_GPU_RESOURCE_ENABLED);
+    if (cgroupsNvidiaEnabled) {
+      return new NvidiaGpuResourceHandlerImpl(
+          getInitializedCGroupsHandler(conf));
+    }
+    return null;
+  }
+
   private static CGroupsCpuResourceHandlerImpl getCGroupsCpuResourceHandler(
       Configuration conf) throws ResourceHandlerException {
     boolean cgroupsCpuEnabled =
@@ -205,6 +217,7 @@ public class ResourceHandlerModule {
     addHandlerIfNotNull(handlerList, getDiskResourceHandler(conf));
     addHandlerIfNotNull(handlerList, getMemoryResourceHandler(conf));
     addHandlerIfNotNull(handlerList, getCGroupsCpuResourceHandler(conf));
+    addHandlerIfNotNull(handlerList, getNvidiaGpuResourceHandler(conf));
     resourceHandlerChain = new ResourceHandlerChain(handlerList);
   }
 

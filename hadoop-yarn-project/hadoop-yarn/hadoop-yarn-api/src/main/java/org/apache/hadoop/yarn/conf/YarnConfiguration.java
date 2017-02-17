@@ -1255,6 +1255,33 @@ public class YarnConfiguration extends Configuration {
   public static final String NM_NETWORK_RESOURCE_OUTBOUND_BANDWIDTH_YARN_MBIT =
       NM_NETWORK_RESOURCE_PREFIX + "outbound-bandwidth-yarn-mbit";
 
+  /**
+   * Prefix for disk configurations. Work in progress: This configuration
+   * parameter may be changed/removed in the future.
+   */
+  @Private
+  public static final String NM_NVIDIA_GPU_RESOURCE_PREFIX = NM_PREFIX
+      + "resource.nvidia-gpu.";
+  /**
+   * This setting controls if resource handling for disk operations is enabled.
+   * Work in progress: This configuration parameter may be changed/removed in
+   * the future
+   */
+  @Private
+  public static final String NM_NVIDIA_GPU_RESOURCE_ENABLED =
+      NM_NVIDIA_GPU_RESOURCE_PREFIX + "enabled";
+
+  @Private
+  public static final String NM_NVIDIA_GPU_ALLOWED_DEVICES =
+      NM_NVIDIA_GPU_RESOURCE_PREFIX + "allowed-gpu-devices";
+
+  /**
+   * Disk as a resource is disabled by default.
+   **/
+  @Private
+  public static final boolean DEFAULT_NM_NVIDIA_GPU_RESOURCE_ENABLED = false;
+
+
   /** NM Webapp address.**/
   public static final String NM_WEBAPP_ADDRESS = NM_PREFIX + "webapp.address";
   public static final int DEFAULT_NM_WEBAPP_PORT = 8042;

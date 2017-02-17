@@ -454,6 +454,14 @@ public class DockerLinuxContainerRuntime implements LinuxContainerRuntime {
         .setCapabilities(capabilities)
         .addMountLocation(CGROUPS_ROOT_DIRECTORY,
             CGROUPS_ROOT_DIRECTORY + ":ro", false);
+
+    // Handle GPU-related configs
+    if (null != environment.get("NV_GPU")) {
+      runCommand.addDockerRunEnvars("NVIDIA_GPU_ENABLED", "true");
+      runCommand.addDockerRunEnvars("NV_GPU", environment.get("NV_GPU"));
+      runCommand.addDockerRunEnvars("PATH", "$PATH:/usr/local/nvidia/bin");
+    }
+
     List<String> allDirs = new ArrayList<>(containerLocalDirs);
 
     allDirs.addAll(filecacheDirs);

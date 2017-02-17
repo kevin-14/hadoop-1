@@ -102,8 +102,10 @@ enum operations {
 #define BANNED_USERS_KEY "banned.users"
 #define ALLOWED_SYSTEM_USERS_KEY "allowed.system.users"
 #define DOCKER_BINARY_KEY "docker.binary"
+#define NVIDIA_DOCKER_BINARY_KEY "nvidia_docker.binary"
 #define DOCKER_SUPPORT_ENABLED_KEY "feature.docker.enabled"
 #define TC_SUPPORT_ENABLED_KEY "feature.tc.enabled"
+#define NVIDIA_GPU_ENABLED_ENV_VAR "NVIDIA_GPU_ENABLED=true"
 #define TMP_DIR "tmp"
 
 extern struct passwd *user_detail;

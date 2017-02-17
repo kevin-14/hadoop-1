@@ -31,6 +31,7 @@ public class DockerRunCommand extends DockerCommand {
   private static final String RUN_COMMAND = "run";
   private final String image;
   private List<String> overrrideCommandWithArgs;
+  private List<String> additionalEnvars = new ArrayList<>();
 
   /** The following are mandatory: */
   public DockerRunCommand(String containerId, String user, String image) {
@@ -114,6 +115,10 @@ public class DockerRunCommand extends DockerCommand {
     return this;
   }
 
+  public void addDockerRunEnvars(String key, String value) {
+    additionalEnvars.add(key + "=" + value);
+  }
+
   @Override
   public String getCommandWithArguments() {
     List<String> argList = new ArrayList<>();
@@ -125,6 +130,10 @@ public class DockerRunCommand extends DockerCommand {
       argList.addAll(overrrideCommandWithArgs);
     }
 
-    return StringUtils.join(" ", argList);
+    String cmd = StringUtils.join(" ", argList);
+    for (String envar : additionalEnvars) {
+      cmd = cmd +"\n" + envar;
+    }
+    return cmd;
   }
 }

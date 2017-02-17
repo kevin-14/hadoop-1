@@ -1300,8 +1300,7 @@ char* sanitize_docker_command(const char *line) {
   return output;
 }
 
-char* parse_docker_command_file(const char* command_file) {
-
+char* parse_docker_command_file(const char* command_file, char** docker_run_envars) {
   size_t len = 0;
   char *line = NULL;
   ssize_t read;
@@ -1318,6 +1317,31 @@ char* parse_docker_command_file(const char* command_file) {
      fflush(ERRORFILE);
      exit(ERROR_READING_DOCKER_FILE);
   }
+  if (docker_run_envars) {
+    // Read envars to "k1=v1 k2=v2 ..." form.
+    int envLen = 0;
+    char* env = NULL;
+
+    while ((read = getline(&env, &len, stream)) > 0) {
+      envLen += (read + 1);
+
+      *docker_run_envars = realloc(*docker_run_envars, envLen);
+      if (envLen == read + 1) {
+        // initialize array for the first use
+        (*docker_run_envars)[0] = 0;
+      }
+
+      if (NULL == *docker_run_envars) {
+        fprintf(ERRORFILE, "failed to allocate memory for docker run envars");
+      }
+
+      // Escape last delim
+      if ('\n' == env[read - 1]) {
+        env[read - 1] = ' ';
+      }
+      strcat(*docker_run_envars, env);
+    }
+  }
   fclose(stream);
 
   char* ret = sanitize_docker_command(line);
@@ -1331,7 +1355,7 @@ char* parse_docker_command_file(const char* command_file) {
 }
 
 int run_docker(const char *command_file) {
-  char* docker_command = parse_docker_command_file(command_file);
+  char* docker_command = parse_docker_command_file(command_file, NULL);
   char* docker_binary = get_value(DOCKER_BINARY_KEY, &executor_cfg);
   docker_binary = check_docker_binary(docker_binary);
 
@@ -1497,8 +1521,19 @@ int launch_docker_container_as_user(const char * user, const char *app_id,
   gid_t user_gid = getegid();
   uid_t prev_uid = geteuid();
 
-  char *docker_command = parse_docker_command_file(command_file);
-  char *docker_binary = get_value(DOCKER_BINARY_KEY, &executor_cfg);
+  // Additional envars for docker run ..
+  char *additional_envs = NULL;
+
+  char *docker_command = parse_docker_command_file(command_file, &additional_envs);
+  char *docker_binary;
+  char *nvidia_docker_binary = NULL;
+  
+  if (additional_envs && 
+      (NULL != strstr(additional_envs, NVIDIA_GPU_ENABLED_ENV_VAR))) {
+    nvidia_docker_binary = get_value(NVIDIA_DOCKER_BINARY_KEY, &executor_cfg);
+  }
+
+  docker_binary = get_value(DOCKER_BINARY_KEY, &executor_cfg);
   docker_binary = check_docker_binary(docker_binary);
 
   fprintf(LOGFILE, "Creating script paths...\n");
@@ -1538,7 +1573,12 @@ int launch_docker_container_as_user(const char * user, const char *app_id,
     goto cleanup;
   }
 
-  snprintf(docker_command_with_binary, EXECUTOR_PATH_MAX, "%s %s", docker_binary, docker_command);
+  snprintf(docker_command_with_binary, EXECUTOR_PATH_MAX, "%s %s %s",
+    additional_envs,
+    // Only use nvidia-docker in run if it is required
+    (nvidia_docker_binary ? nvidia_docker_binary : docker_binary), 
+    docker_command);
+  fprintf(LOGFILE, "Docker run command, %s", docker_command_with_binary);
 
   fprintf(LOGFILE, "Launching docker container...\n");
   FILE* start_docker = popen(docker_command_with_binary, "r");
