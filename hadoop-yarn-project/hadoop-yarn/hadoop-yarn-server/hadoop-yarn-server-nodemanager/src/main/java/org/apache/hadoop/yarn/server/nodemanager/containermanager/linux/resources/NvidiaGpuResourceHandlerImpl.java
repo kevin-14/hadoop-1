@@ -18,7 +18,7 @@
 
 package org.apache.hadoop.yarn.server.nodemanager.containermanager.linux.resources;
 
-import com.google.common.collect.Sets;
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -29,24 +29,20 @@ import org.apache.hadoop.yarn.server.nodemanager.containermanager.container.Cont
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.linux.privileged.PrivilegedOperation;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 public class NvidiaGpuResourceHandlerImpl implements ResourceHandler {
   final static Log LOG = LogFactory
       .getLog(NvidiaGpuResourceHandlerImpl.class);
 
   private final String REQUEST_GPU_NUM_ENV_KEY = "REQUESTED_GPU_NUM";
-  private Set<Integer> allowedGpuDevices = new HashSet<>();
-  private Map<Integer, ContainerId> usedDevices = new HashMap<>();
+  private GpuResourceAllocator gpuAllocator;
   private CGroupsHandler cGroupsHandler;
 
   NvidiaGpuResourceHandlerImpl(CGroupsHandler cGroupsHandler) {
     this.cGroupsHandler = cGroupsHandler;
+    gpuAllocator = new GpuResourceAllocator();
   }
 
   @Override
@@ -57,8 +53,10 @@ public class NvidiaGpuResourceHandlerImpl implements ResourceHandler {
 
     if (null != allowedDevicesStr) {
       for (String s : allowedDevicesStr.split(",")) {
-        Integer minorNum = Integer.valueOf(s);
-        allowedGpuDevices.add(minorNum);
+        if (s.trim().length() > 0) {
+          Integer minorNum = Integer.valueOf(s.trim());
+          gpuAllocator.addGpu(minorNum);
+        }
       }
     }
     LOG.info("Allocated GPU devices minor numbers:" + allowedDevicesStr);
@@ -83,63 +81,27 @@ public class NvidiaGpuResourceHandlerImpl implements ResourceHandler {
   @Override
   public synchronized List<PrivilegedOperation> preStart(Container container)
       throws ResourceHandlerException {
-    // Always remove NV_GPU from environment
-    container.getLaunchContext().getEnvironment().remove("NV_GPU");
-
-    ContainerId containerId = container.getContainerId();
+    String containerIdStr = container.getContainerId().toString();
 
     int requestedGpu = getRequestedGpu(container);
 
-    StringBuilder nvGpuEnv = new StringBuilder();
-
-    Set<Integer> assignedGpus = new HashSet<>();
-
     // Assign Gpus to container if requested some.
-    if (requestedGpu > 0) {
-      for (int deviceNum : allowedGpuDevices) {
-        if (!usedDevices.containsKey(deviceNum)) {
-          usedDevices.put(deviceNum, containerId);
-          assignedGpus.add(deviceNum);
-          if (nvGpuEnv.length() > 0) {
-            nvGpuEnv.append(",");
-          }
-          nvGpuEnv.append(deviceNum);
-          if (assignedGpus.size() >= requestedGpu) {
-            Map<String, String> envs =
-                container.getLaunchContext().getEnvironment();
-            envs.put("NV_GPU", nvGpuEnv.toString());
-            LOG.info("Assigned GPU=" + nvGpuEnv.toString() + " to container="
-                + containerId);
-            break;
-          }
-        }
-      }
-    }
+    GpuResourceAllocator.GpuAllocation allocation = gpuAllocator.assignGpus(
+        requestedGpu, containerIdStr);
 
-    // Make sure we have enough Gpu assigned.
-    if (requestedGpu > assignedGpus.size()) {
-      // Release all assigned Gpus
-      releaseAssignedGpusForContainer(containerId);
-
-      throw new ResourceHandlerException(
-          "Failed to find enough GPU to assign, requested=" + requestedGpu
-              + ", availble=" + (allowedGpuDevices.size() - usedDevices.size())
-              + " for container=" + container.getContainerId());
-    }
-
-    // Get Gpu blacklists
-    Set<Integer> deniedGpus = Sets.difference(allowedGpuDevices, assignedGpus);
+    // Create device cgroups for the container
     cGroupsHandler.createCGroup(CGroupsHandler.CGroupController.DEVICES,
-        containerId.toString());
+        containerIdStr);
     try {
-      for (int device : deniedGpus) {
-        cGroupsHandler.updateCGroupParam(CGroupsHandler.CGroupController.DEVICES,
-            containerId.toString(), CGroupsHandler.CGROUP_PARAM_DEVICE_DENY,
+      for (int device : allocation.getDenied()) {
+        cGroupsHandler.updateCGroupParam(
+            CGroupsHandler.CGroupController.DEVICES, containerIdStr,
+            CGroupsHandler.CGROUP_PARAM_DEVICE_DENY,
             getDeviceDeniedValue(device));
       }
     } catch (ResourceHandlerException re) {
       cGroupsHandler.deleteCGroup(CGroupsHandler.CGroupController.DEVICES,
-          containerId.toString());
+          containerIdStr);
       LOG.warn("Could not update cgroup for container", re);
       throw re;
     }
@@ -149,37 +111,38 @@ public class NvidiaGpuResourceHandlerImpl implements ResourceHandler {
         PrivilegedOperation.OperationType.ADD_PID_TO_CGROUP,
         PrivilegedOperation.CGROUP_ARG_PREFIX
             + cGroupsHandler.getPathForCGroupTasks(
-            CGroupsHandler.CGroupController.DEVICES, containerId.toString())));
+            CGroupsHandler.CGroupController.DEVICES, containerIdStr)));
 
     return ret;
   }
 
-  private String getDeviceDeniedValue(int device) {
-    String val = String.format("c 195:%d rwm", device);
+  @VisibleForTesting
+  public static String getDeviceDeniedValue(int deviceMinorNumber) {
+    String val = String.format("c 195:%d rwm", deviceMinorNumber);
     LOG.info("Add denied devices to cgroups:" + val);
     return val;
+  }
+
+  @VisibleForTesting
+  public GpuResourceAllocator getGpuAllocator() {
+    return gpuAllocator;
   }
 
   @Override
   public List<PrivilegedOperation> reacquireContainer(ContainerId containerId)
       throws ResourceHandlerException {
+    // FIXME, need to read from cgroups and update allocator accordingly.
+    LOG.info("##### print cgroups info for GPU:");
+    LOG.info(cGroupsHandler.getCGroupParam(
+        CGroupsHandler.CGroupController.DEVICES, containerId.toString(),
+        CGroupsHandler.CGROUP_PARAM_DEVICE_DENY));
     return null;
-  }
-
-  private void releaseAssignedGpusForContainer(ContainerId containerId) {
-    Iterator<Map.Entry<Integer, ContainerId>> iter =
-        usedDevices.entrySet().iterator();
-    while (iter.hasNext()) {
-      if (iter.next().getValue().equals(containerId)) {
-        iter.remove();
-      }
-    }
   }
 
   @Override
   public synchronized List<PrivilegedOperation> postComplete(
       ContainerId containerId) throws ResourceHandlerException {
-    releaseAssignedGpusForContainer(containerId);
+    gpuAllocator.cleanupAssignGpus(containerId.toString());
     cGroupsHandler.deleteCGroup(CGroupsHandler.CGroupController.DEVICES,
         containerId.toString());
     return null;

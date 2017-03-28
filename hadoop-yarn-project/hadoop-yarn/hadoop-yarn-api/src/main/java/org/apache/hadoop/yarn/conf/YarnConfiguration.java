@@ -1263,9 +1263,7 @@ public class YarnConfiguration extends Configuration {
   public static final String NM_NVIDIA_GPU_RESOURCE_PREFIX = NM_PREFIX
       + "resource.nvidia-gpu.";
   /**
-   * This setting controls if resource handling for disk operations is enabled.
-   * Work in progress: This configuration parameter may be changed/removed in
-   * the future
+   * This setting controls if resource handling for GPU operations is enabled.
    */
   @Private
   public static final String NM_NVIDIA_GPU_RESOURCE_ENABLED =
