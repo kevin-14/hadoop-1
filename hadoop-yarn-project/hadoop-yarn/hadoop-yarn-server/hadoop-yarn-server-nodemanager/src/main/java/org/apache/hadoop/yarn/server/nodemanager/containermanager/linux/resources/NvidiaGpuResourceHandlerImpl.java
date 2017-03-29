@@ -65,7 +65,7 @@ public class NvidiaGpuResourceHandlerImpl implements ResourceHandler {
         }
       }
     }
-    LOG.info("Allocated GPU devices minor numbers:" + allowedDevicesStr);
+    LOG.info("Allowed GPU devices with minor numbers:" + allowedDevicesStr);
 
     // And initialize cgroups
     this.cGroupsHandler.initializeCGroupController(
@@ -106,13 +106,8 @@ public class NvidiaGpuResourceHandlerImpl implements ResourceHandler {
             getDeviceDeniedValue(device));
       }
 
-      // DEBUG
-      // TODO, remove this for final patch.
-      LOG.info("##### print cgroups info for GPU:");
-      LOG.info(cGroupsHandler.getCGroupParam(
-          CGroupsHandler.CGroupController.DEVICES, containerIdStr,
-          CGroupsHandler.CGROUP_PARAM_DEVICE_DENY));
-
+      // Set ALLOCATED_GPU_MINOR_NUMS_ENV_KEY to environment so later runtime
+      // can use it.
       Map<String, String> envs = container.getLaunchContext().getEnvironment();
       if (null == allocation.getAllowed() || allocation.getAllowed().isEmpty()) {
         envs.put(ALLOCATED_GPU_MINOR_NUMS_ENV_KEY, "");
@@ -152,7 +147,8 @@ public class NvidiaGpuResourceHandlerImpl implements ResourceHandler {
   @Override
   public List<PrivilegedOperation> reacquireContainer(ContainerId containerId)
       throws ResourceHandlerException {
-    // FIXME, need to read from cgroups and update allocator accordingly.
+    // FIXME, need to make sure allocated containers and cgroups can be
+    // recovered when NM restarts.
     return null;
   }
 
