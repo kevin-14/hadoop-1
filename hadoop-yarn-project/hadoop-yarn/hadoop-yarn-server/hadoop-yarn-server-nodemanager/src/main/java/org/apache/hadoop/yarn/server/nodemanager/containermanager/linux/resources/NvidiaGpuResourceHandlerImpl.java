@@ -22,6 +22,7 @@ import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.api.records.ContainerLaunchContext;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
@@ -37,6 +38,11 @@ public class NvidiaGpuResourceHandlerImpl implements ResourceHandler {
       .getLog(NvidiaGpuResourceHandlerImpl.class);
 
   private final String REQUEST_GPU_NUM_ENV_KEY = "REQUESTED_GPU_NUM";
+
+  // This will be used by container-executor to add necessary clis
+  public static final String ALLOCATED_GPU_MINOR_NUMS_ENV_KEY =
+      "YARN_ALLOCATED_GPUS";
+
   private GpuResourceAllocator gpuAllocator;
   private CGroupsHandler cGroupsHandler;
 
@@ -99,6 +105,21 @@ public class NvidiaGpuResourceHandlerImpl implements ResourceHandler {
             CGroupsHandler.CGROUP_PARAM_DEVICE_DENY,
             getDeviceDeniedValue(device));
       }
+
+      // DEBUG
+      // TODO, remove this for final patch.
+      LOG.info("##### print cgroups info for GPU:");
+      LOG.info(cGroupsHandler.getCGroupParam(
+          CGroupsHandler.CGroupController.DEVICES, containerIdStr,
+          CGroupsHandler.CGROUP_PARAM_DEVICE_DENY));
+
+      Map<String, String> envs = container.getLaunchContext().getEnvironment();
+      if (null == allocation.getAllowed() || allocation.getAllowed().isEmpty()) {
+        envs.put(ALLOCATED_GPU_MINOR_NUMS_ENV_KEY, "");
+      } else {
+        envs.put(ALLOCATED_GPU_MINOR_NUMS_ENV_KEY,
+            StringUtils.join(",", allocation.getAllowed()));
+      }
     } catch (ResourceHandlerException re) {
       cGroupsHandler.deleteCGroup(CGroupsHandler.CGroupController.DEVICES,
           containerIdStr);
@@ -132,10 +153,6 @@ public class NvidiaGpuResourceHandlerImpl implements ResourceHandler {
   public List<PrivilegedOperation> reacquireContainer(ContainerId containerId)
       throws ResourceHandlerException {
     // FIXME, need to read from cgroups and update allocator accordingly.
-    LOG.info("##### print cgroups info for GPU:");
-    LOG.info(cGroupsHandler.getCGroupParam(
-        CGroupsHandler.CGroupController.DEVICES, containerId.toString(),
-        CGroupsHandler.CGROUP_PARAM_DEVICE_DENY));
     return null;
   }
 
