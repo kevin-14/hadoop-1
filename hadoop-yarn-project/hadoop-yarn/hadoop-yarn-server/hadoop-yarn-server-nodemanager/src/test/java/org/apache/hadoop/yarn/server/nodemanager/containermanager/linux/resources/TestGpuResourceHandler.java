@@ -19,14 +19,14 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class TestNvidiaGpuResourceHandler {
+public class TestGpuResourceHandler {
   private CGroupsHandler mockCGroupsHandler;
-  private NvidiaGpuResourceHandlerImpl nvidiaGpuResourceHandler;
+  private GpuResourceHandlerImpl gpuResourceHandler;
 
   @Before
   public void setup() {
     mockCGroupsHandler = mock(CGroupsHandler.class);
-    nvidiaGpuResourceHandler = new NvidiaGpuResourceHandlerImpl(
+    gpuResourceHandler = new GpuResourceHandlerImpl(
         mockCGroupsHandler);
   }
 
@@ -34,7 +34,7 @@ public class TestNvidiaGpuResourceHandler {
   public void testBootStrap() throws ResourceHandlerException {
     Configuration conf = new YarnConfiguration();
 
-    nvidiaGpuResourceHandler.bootstrap(conf);
+    gpuResourceHandler.bootstrap(conf);
     verify(mockCGroupsHandler, times(1)).initializeCGroupController(
         CGroupsHandler.CGroupController.DEVICES);
   }
@@ -65,7 +65,7 @@ public class TestNvidiaGpuResourceHandler {
         verify(mockCGroupsHandler, times(1)).updateCGroupParam(
             CGroupsHandler.CGroupController.DEVICES, containerId.toString(),
             CGroupsHandler.CGROUP_PARAM_DEVICE_DENY,
-            NvidiaGpuResourceHandlerImpl
+            GpuResourceHandlerImpl
                 .getDeviceDeniedValue(deniedDevices[i]));
       }
     }
@@ -74,15 +74,15 @@ public class TestNvidiaGpuResourceHandler {
   @Test
   public void testAllocation() throws Exception {
     Configuration conf = new YarnConfiguration();
-    conf.set(YarnConfiguration.NM_NVIDIA_GPU_ALLOWED_DEVICES, "0,1,3,4");
-    conf.setBoolean(YarnConfiguration.NM_NVIDIA_GPU_RESOURCE_ENABLED, true);
+    conf.set(YarnConfiguration.NM_GPU_ALLOWED_DEVICES, "0,1,3,4");
+    conf.setBoolean(YarnConfiguration.NM_GPU_RESOURCE_ENABLED, true);
 
-    nvidiaGpuResourceHandler.bootstrap(conf);
+    gpuResourceHandler.bootstrap(conf);
     Assert.assertEquals(4,
-        nvidiaGpuResourceHandler.getGpuAllocator().getAvailableGpus());
+        gpuResourceHandler.getGpuAllocator().getAvailableGpus());
 
     /* Start container 1, asks 3 containers */
-    nvidiaGpuResourceHandler.preStart(mockContainer(1, 3));
+    gpuResourceHandler.preStart(mockContainer(1, 3));
 
     // Only device=4 will be blocked.
     verifyDeniedDevices(getContainerId(1), new int[] { 4 });
@@ -90,70 +90,70 @@ public class TestNvidiaGpuResourceHandler {
     /* Start container 2, asks 2 containers. Excepted to fail */
     boolean failedToAllocate = false;
     try {
-      nvidiaGpuResourceHandler.preStart(mockContainer(2, 2));
+      gpuResourceHandler.preStart(mockContainer(2, 2));
     } catch (ResourceHandlerException e) {
       failedToAllocate = true;
     }
     Assert.assertTrue(failedToAllocate);
 
     /* Start container 3, ask 1 container, succeeded */
-    nvidiaGpuResourceHandler.preStart(mockContainer(3, 1));
+    gpuResourceHandler.preStart(mockContainer(3, 1));
 
     // devices = 0/1/3 will be blocked
     verifyDeniedDevices(getContainerId(3), new int[] { 0, 1, 3 });
 
     /* Start container 4, ask 0 container, succeeded */
-    nvidiaGpuResourceHandler.preStart(mockContainer(4, 0));
+    gpuResourceHandler.preStart(mockContainer(4, 0));
 
     // All devices will be blocked
     verifyDeniedDevices(getContainerId(4), new int[] { 0, 1, 3, 4 });
 
     /* Release container-1, expect cgroups deleted */
-    nvidiaGpuResourceHandler.postComplete(getContainerId(1));
+    gpuResourceHandler.postComplete(getContainerId(1));
 
     verify(mockCGroupsHandler, times(1)).createCGroup(
         CGroupsHandler.CGroupController.DEVICES, getContainerId(1).toString());
     Assert.assertEquals(3,
-        nvidiaGpuResourceHandler.getGpuAllocator().getAvailableGpus());
+        gpuResourceHandler.getGpuAllocator().getAvailableGpus());
 
     /* Release container-3, expect cgroups deleted */
-    nvidiaGpuResourceHandler.postComplete(getContainerId(3));
+    gpuResourceHandler.postComplete(getContainerId(3));
 
     verify(mockCGroupsHandler, times(1)).createCGroup(
         CGroupsHandler.CGroupController.DEVICES, getContainerId(3).toString());
     Assert.assertEquals(4,
-        nvidiaGpuResourceHandler.getGpuAllocator().getAvailableGpus());
+        gpuResourceHandler.getGpuAllocator().getAvailableGpus());
   }
 
   @Test
   public void testAllocationWithoutAllowedGpus() throws Exception {
     Configuration conf = new YarnConfiguration();
-    conf.set(YarnConfiguration.NM_NVIDIA_GPU_ALLOWED_DEVICES, "");
-    conf.setBoolean(YarnConfiguration.NM_NVIDIA_GPU_RESOURCE_ENABLED, true);
+    conf.set(YarnConfiguration.NM_GPU_ALLOWED_DEVICES, "");
+    conf.setBoolean(YarnConfiguration.NM_GPU_RESOURCE_ENABLED, true);
 
-    nvidiaGpuResourceHandler.bootstrap(conf);
+    gpuResourceHandler.bootstrap(conf);
     Assert.assertEquals(0,
-        nvidiaGpuResourceHandler.getGpuAllocator().getAvailableGpus());
+        gpuResourceHandler.getGpuAllocator().getAvailableGpus());
 
     /* Start container 1, asks 0 containers */
-    nvidiaGpuResourceHandler.preStart(mockContainer(1, 0));
+    gpuResourceHandler.preStart(mockContainer(1, 0));
     verifyDeniedDevices(getContainerId(1), new int[] { });
 
     /* Start container 2, asks 1 containers. Excepted to fail */
     boolean failedToAllocate = false;
     try {
-      nvidiaGpuResourceHandler.preStart(mockContainer(2, 1));
+      gpuResourceHandler.preStart(mockContainer(2, 1));
     } catch (ResourceHandlerException e) {
       failedToAllocate = true;
     }
     Assert.assertTrue(failedToAllocate);
 
     /* Release container 1, expect cgroups deleted */
-    nvidiaGpuResourceHandler.postComplete(getContainerId(1));
+    gpuResourceHandler.postComplete(getContainerId(1));
 
     verify(mockCGroupsHandler, times(1)).createCGroup(
         CGroupsHandler.CGroupController.DEVICES, getContainerId(1).toString());
     Assert.assertEquals(0,
-        nvidiaGpuResourceHandler.getGpuAllocator().getAvailableGpus());
+        gpuResourceHandler.getGpuAllocator().getAvailableGpus());
   }
 }

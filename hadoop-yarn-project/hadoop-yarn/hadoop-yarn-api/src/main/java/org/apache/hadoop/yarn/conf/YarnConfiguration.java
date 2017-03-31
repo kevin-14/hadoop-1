@@ -1260,24 +1260,24 @@ public class YarnConfiguration extends Configuration {
    * parameter may be changed/removed in the future.
    */
   @Private
-  public static final String NM_NVIDIA_GPU_RESOURCE_PREFIX = NM_PREFIX
-      + "resource.nvidia-gpu.";
+  public static final String NM_GPU_RESOURCE_PREFIX = NM_PREFIX
+      + "resource.gpu.";
   /**
    * This setting controls if resource handling for GPU operations is enabled.
    */
   @Private
-  public static final String NM_NVIDIA_GPU_RESOURCE_ENABLED =
-      NM_NVIDIA_GPU_RESOURCE_PREFIX + "enabled";
+  public static final String NM_GPU_RESOURCE_ENABLED =
+      NM_GPU_RESOURCE_PREFIX + "enabled";
 
   @Private
-  public static final String NM_NVIDIA_GPU_ALLOWED_DEVICES =
-      NM_NVIDIA_GPU_RESOURCE_PREFIX + "allowed-gpu-devices";
+  public static final String NM_GPU_ALLOWED_DEVICES =
+      NM_GPU_RESOURCE_PREFIX + "allowed-gpu-devices";
 
   /**
    * Disk as a resource is disabled by default.
    **/
   @Private
-  public static final boolean DEFAULT_NM_NVIDIA_GPU_RESOURCE_ENABLED = false;
+  public static final boolean DEFAULT_NM_GPU_RESOURCE_ENABLED = false;
 
 
   /** NM Webapp address.**/

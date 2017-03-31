@@ -38,7 +38,7 @@ import org.apache.hadoop.yarn.server.nodemanager.containermanager.linux.privileg
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.linux.privileged.PrivilegedOperationException;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.linux.privileged.PrivilegedOperationExecutor;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.linux.resources.CGroupsHandler;
-import org.apache.hadoop.yarn.server.nodemanager.containermanager.linux.resources.NvidiaGpuResourceHandlerImpl;
+import org.apache.hadoop.yarn.server.nodemanager.containermanager.linux.resources.GpuResourceHandlerImpl;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.linux.resources.ResourceHandlerModule;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.linux.runtime.docker.DockerClient;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.linux.runtime.docker.DockerInspectCommand;
@@ -458,12 +458,12 @@ public class DockerLinuxContainerRuntime implements LinuxContainerRuntime {
 
     // Handle GPU-related configs
     String allocatedGpus = environment.get(
-        NvidiaGpuResourceHandlerImpl.ALLOCATED_GPU_MINOR_NUMS_ENV_KEY);
+        GpuResourceHandlerImpl.ALLOCATED_GPU_MINOR_NUMS_ENV_KEY);
     if (null != allocatedGpus && !allocatedGpus.isEmpty()) {
-      // We allocated some GPUs, set YARN_CONTAINER_EXECUTOR_NVIDIA_GPU_ENABLED
+      // We allocated some GPUs, set YARN_CONTAINER_EXECUTOR_GPU_ENABLED
       // to true.
       runCommand.addDockerRunEnvars(
-          "YARN_CONTAINER_EXECUTOR_NVIDIA_GPU_ENABLED", "true");
+          "YARN_CONTAINER_EXECUTOR_GPU_ENABLED", "true");
       runCommand.addDockerRunEnvars("PATH", "$PATH:/usr/local/nvidia/bin");
     }
 

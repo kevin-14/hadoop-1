@@ -1529,7 +1529,7 @@ int launch_docker_container_as_user(const char * user, const char *app_id,
   char *nvidia_docker_binary = NULL;
   
   if (additional_envs && 
-      (NULL != strstr(additional_envs, NVIDIA_GPU_ENABLED_ENV_VAR))) {
+      (NULL != strstr(additional_envs, GPU_ENABLED_ENV_VAR))) {
     nvidia_docker_binary = get_value(NVIDIA_DOCKER_BINARY_KEY, &executor_cfg);
   }
 

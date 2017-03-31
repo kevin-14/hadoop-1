@@ -33,9 +33,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class NvidiaGpuResourceHandlerImpl implements ResourceHandler {
+public class GpuResourceHandlerImpl implements ResourceHandler {
   final static Log LOG = LogFactory
-      .getLog(NvidiaGpuResourceHandlerImpl.class);
+      .getLog(GpuResourceHandlerImpl.class);
 
   private final String REQUEST_GPU_NUM_ENV_KEY = "REQUESTED_GPU_NUM";
 
@@ -46,7 +46,7 @@ public class NvidiaGpuResourceHandlerImpl implements ResourceHandler {
   private GpuResourceAllocator gpuAllocator;
   private CGroupsHandler cGroupsHandler;
 
-  NvidiaGpuResourceHandlerImpl(CGroupsHandler cGroupsHandler) {
+  GpuResourceHandlerImpl(CGroupsHandler cGroupsHandler) {
     this.cGroupsHandler = cGroupsHandler;
     gpuAllocator = new GpuResourceAllocator();
   }
@@ -55,7 +55,7 @@ public class NvidiaGpuResourceHandlerImpl implements ResourceHandler {
   public List<PrivilegedOperation> bootstrap(Configuration configuration)
       throws ResourceHandlerException {
     String allowedDevicesStr = configuration.get(
-        YarnConfiguration.NM_NVIDIA_GPU_ALLOWED_DEVICES);
+        YarnConfiguration.NM_GPU_ALLOWED_DEVICES);
 
     if (null != allowedDevicesStr) {
       for (String s : allowedDevicesStr.split(",")) {

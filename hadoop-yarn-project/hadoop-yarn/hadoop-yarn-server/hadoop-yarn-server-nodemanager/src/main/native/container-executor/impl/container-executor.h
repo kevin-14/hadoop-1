@@ -105,7 +105,7 @@ enum operations {
 #define NVIDIA_DOCKER_BINARY_KEY "nvidia_docker.binary"
 #define DOCKER_SUPPORT_ENABLED_KEY "feature.docker.enabled"
 #define TC_SUPPORT_ENABLED_KEY "feature.tc.enabled"
-#define NVIDIA_GPU_ENABLED_ENV_VAR "YARN_CONTAINER_EXECUTOR_NVIDIA_GPU_ENABLED=true"
+#define GPU_ENABLED_ENV_VAR "YARN_CONTAINER_EXECUTOR_GPU_ENABLED=true"
 #define TMP_DIR "tmp"
 
 extern struct passwd *user_detail;
