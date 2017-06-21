@@ -2369,3 +2369,45 @@ int traffic_control_read_state(char *command_file) {
 int traffic_control_read_stats(char *command_file) {
   return run_traffic_control(TC_READ_STATS_OPTS, command_file);
 }
+
+int update_cgroups_parameters(const char* cgroup_param_path, const char* value) {
+#ifndef __linux
+  fprintf(LOGFILE, "Failed to update cgroups parameters, not supported\n");
+  return -1;
+#endif
+
+  // Validate path
+  // To make sure this is not abused, only allows write to a path if
+  // 1) Includes "devices.deny"
+  // 2) Includes "container_"
+  // TODO: should update this to be a more general approach.
+  if (NULL == strstr(cgroup_param_path, "devices.deny")
+      || NULL == strstr(cgroup_param_path, "container_")) {
+    fprintf(LOGFILE, "Now only support change devices.deny for specific container's cgroup");
+    return -1;
+  }
+
+  // Make sure file exist
+  struct stat sb;
+  if (stat(cgroup_param_path, &sb) != 0) {
+    fprintf(LOGFILE, "CGroups parameter file to write doesn't exist");
+    return -1;
+  }
+
+  // Validate value
+  // To make sure this is not abused, only allows deny access to Nvidia GPU
+  // devices.
+  // TODO: should update this to be a more general approach.
+  if (NULL == strstr(value, "c 195:")) {
+    fprintf(LOGFILE, "Now only set major device number to 195 (Nvidia devices)");
+    return -1;
+  }
+
+  // Write values to file
+  FILE *f;
+  f = fopen(cgroup_param_path, "a");
+  fprintf(f, "%s", value);
+  fclose(f);
+
+  return 0;
+}

@@ -89,7 +89,8 @@ enum operations {
   RUN_AS_USER_DELETE = 9,
   RUN_AS_USER_LAUNCH_DOCKER_CONTAINER = 10,
   RUN_DOCKER = 11,
-  RUN_AS_USER_LIST = 12
+  RUN_AS_USER_LIST = 12,
+  UPDATE_CGROUPS_PARAM = 13,
 };
 
 #define NM_GROUP_KEY "yarn.nodemanager.linux-container-executor.group"
@@ -311,3 +312,8 @@ int run_docker(const char *command_file);
  * Sanitize docker commands. Returns NULL if there was any failure.
 */
 char* sanitize_docker_command(const char *line);
+
+/**
+ * Update CGroup Parameters
+ */
+int update_cgroups_parameters(const char* path, const char* value);

@@ -607,4 +607,37 @@ class CGroupsHandlerImpl implements CGroupsHandler {
           "Unable to read from " + cGroupParamPath);
     }
   }
+
+  @Override
+  public void updateCGroupParamUseCBinary(CGroupController controller,
+      String cGroupId, String param, String value)
+      throws ResourceHandlerException {
+    String cGroupParamPath = getPathForCGroupParam(controller, cGroupId, param);
+
+    if (LOG.isDebugEnabled()) {
+      LOG.debug(String.format("updateCGroupParam for path: %s with value %s",
+          cGroupParamPath, value));
+    }
+
+    try {
+      //lock out other readers/writers till we are done
+      rwLock.writeLock().lock();
+
+      PrivilegedOperation.OperationType opType =
+          PrivilegedOperation.OperationType.UPDATE_CGROUPS_PARAM;
+      PrivilegedOperation op = new PrivilegedOperation(opType);
+
+      op.appendArgs(cGroupParamPath, value);
+      LOG.info("Update cgroups param use container-executor binary:" + " path="
+          + cGroupParamPath + " value=" + value);
+      privilegedOperationExecutor.executePrivilegedOperation(op, true);
+
+    } catch (PrivilegedOperationException e) {
+      LOG.error("Failed to update cgroups param");
+      throw new ResourceHandlerException(
+          "Failed to update cgroups param, path=" + cGroupParamPath);
+    } finally {
+      rwLock.writeLock().unlock();
+    }
+  }
 }

@@ -106,6 +106,9 @@ static void display_usage(FILE *stream) {
       "            delete as user:        %2d relative-path\n"
       "            list as user:          %2d relative-path\n",
       SIGNAL_CONTAINER, DELETE_AS_USER, LIST_AS_USER);
+
+  fprintf(stream,
+      "       container-executor --update-cgroups-param <path> <value>\n");
 }
 
 /* Sets up log files for normal/error logging */
@@ -234,6 +237,8 @@ static struct {
   int container_pid;
   int signal;
   const char *docker_command_file;
+  const char *cgroups_param_path;
+  const char* cgroups_param_value;
 } cmd_input;
 
 static int validate_run_as_user_commands(int argc, char **argv, int *operation);
@@ -331,6 +336,21 @@ static int validate_arguments(int argc, char **argv , int *operation) {
         return FEATURE_DISABLED;
     }
   }
+
+  if (strcmp("--update-cgroups-param", argv[1]) == 0) {
+    // parameter: path, value
+    if (argc != 4) {
+      display_usage(stdout);
+      return INVALID_ARGUMENT_NUMBER;
+    } else {
+      optind++;
+      cmd_input.cgroups_param_path = argv[optind++];
+      cmd_input.cgroups_param_value = argv[optind++];
+      *operation = UPDATE_CGROUPS_PARAM;
+      return 0;
+    }
+  }
+
   /* Now we have to validate 'run as user' operations that don't use
     a 'long option' - we should fix this at some point. The validation/argument
     parsing here is extensive enough that it done in a separate function */
@@ -655,6 +675,10 @@ int main(int argc, char **argv) {
     }
 
     exit_code = list_as_user(cmd_input.target_dir);
+    break;
+  case UPDATE_CGROUPS_PARAM:
+    exit_code = update_cgroups_parameters(cmd_input.cgroups_param_path,
+      cmd_input.cgroups_param_value);
     break;
   }
 

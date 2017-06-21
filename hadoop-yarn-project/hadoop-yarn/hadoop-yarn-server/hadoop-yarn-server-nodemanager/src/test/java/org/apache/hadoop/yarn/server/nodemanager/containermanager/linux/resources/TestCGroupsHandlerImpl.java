@@ -573,4 +573,72 @@ public class TestCGroupsHandlerImpl {
         new File(new File(newMountPoint, "cpu"), this.hierarchy);
     assertTrue("Yarn cgroup should exist", hierarchyFile.exists());
   }
+
+  @Test
+  public void testCGroupParamUpdateUseCBinary()
+      throws IOException, PrivilegedOperationException {
+    //As per junit behavior, we expect a new mock object to be available
+    //in this test.
+    verifyZeroInteractions(privilegedOperationExecutorMock);
+    CGroupsHandler cGroupsHandler = null;
+    File mtab = createEmptyCgroups();
+
+    // Lets manually create a path to (partially) simulate a controller mounted
+    // later in the test. This is required because the handler uses a mocked
+    // privileged operation executor
+    assertTrue("Sample subsystem should be created",
+        new File(controllerPath).mkdirs());
+
+    try {
+      cGroupsHandler = new CGroupsHandlerImpl(createMountConfiguration(),
+          privilegedOperationExecutorMock, mtab.getAbsolutePath());
+      cGroupsHandler.initializeCGroupController(controller);
+    } catch (ResourceHandlerException e) {
+      LOG.error("Caught exception: " + e);
+      assertTrue(
+          "Unexpected ResourceHandlerException when mounting controller!",
+          false);
+    }
+
+    String testCGroup = "container_01";
+    String expectedPath = controllerPath
+        + Path.SEPARATOR + testCGroup;
+    try {
+      String path = cGroupsHandler.createCGroup(controller, testCGroup);
+
+      assertTrue(new File(expectedPath).exists());
+      Assert.assertEquals(expectedPath, path);
+
+      //update param and read param tests.
+      //We don't use net_cls.classid because as a test param here because
+      //cgroups provides very specific read/write semantics for classid (only
+      //numbers can be written - potentially as hex but can be read out only
+      //as decimal)
+      String param = "test_param";
+      String paramValue = "test_param_value";
+
+      cGroupsHandler.updateCGroupParamUseCBinary(controller, testCGroup, param,
+          paramValue);
+      String paramPath = expectedPath
+          + Path.SEPARATOR + controller.getName()
+          + "." + param;
+
+      ArgumentCaptor<PrivilegedOperation> opCaptor = ArgumentCaptor.forClass(
+          PrivilegedOperation.class);
+      verify(privilegedOperationExecutorMock)
+          .executePrivilegedOperation(opCaptor.capture(), eq(true));
+
+      PrivilegedOperation expectedOp = new PrivilegedOperation(
+          PrivilegedOperation.OperationType.UPDATE_CGROUPS_PARAM);
+      expectedOp.appendArgs(paramPath, paramValue);
+
+      //we'll explicitly capture and assert that the
+      //captured op and the expected op are identical.
+      Assert.assertEquals(expectedOp, opCaptor.getValue());
+    } catch (ResourceHandlerException e) {
+      LOG.error("Caught exception: " + e);
+      Assert
+          .fail("Unexpected ResourceHandlerException during cgroup operations!");
+    }
+  }
 }

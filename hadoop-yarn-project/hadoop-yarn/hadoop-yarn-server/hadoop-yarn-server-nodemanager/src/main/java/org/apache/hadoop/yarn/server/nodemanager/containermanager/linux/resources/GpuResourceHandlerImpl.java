@@ -100,7 +100,7 @@ public class GpuResourceHandlerImpl implements ResourceHandler {
         containerIdStr);
     try {
       for (int device : allocation.getDenied()) {
-        cGroupsHandler.updateCGroupParam(
+        cGroupsHandler.updateCGroupParamUseCBinary(
             CGroupsHandler.CGroupController.DEVICES, containerIdStr,
             CGroupsHandler.CGROUP_PARAM_DEVICE_DENY,
             getDeviceDeniedValue(device));

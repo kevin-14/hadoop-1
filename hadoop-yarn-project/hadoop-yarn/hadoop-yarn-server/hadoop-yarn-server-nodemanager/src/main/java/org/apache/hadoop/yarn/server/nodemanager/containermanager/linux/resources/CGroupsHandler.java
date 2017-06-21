@@ -150,6 +150,22 @@ public interface CGroupsHandler {
       String param, String value) throws ResourceHandlerException;
 
   /**
+   * updates a cgroup parameter use container-executor binary,
+   * given a controller, cgroup id, parameter name. and a parameter value.
+   *
+   * This is majorly to overcome issues that some controllers can only be
+   * modified by admin user.
+   *
+   * @param controller - controller type for the cgroup
+   * @param cGroupId - id of the cgroup
+   * @param param - cgroup parameter ( e.g classid )
+   * @param value - value to be written to the parameter file
+   * @throws ResourceHandlerException the operation failed
+   */
+  void updateCGroupParamUseCBinary(CGroupController controller, String cGroupId,
+      String param, String value) throws ResourceHandlerException;
+
+  /**
    * reads a cgroup parameter value, given a controller, cgroup id, parameter.
    * name
    * @param controller - controller type for the cgroup
