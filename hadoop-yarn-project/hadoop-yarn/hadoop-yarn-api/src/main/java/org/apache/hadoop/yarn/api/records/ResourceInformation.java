@@ -36,8 +36,10 @@ public class ResourceInformation implements Comparable<ResourceInformation> {
   private long minimumAllocation;
   private long maximumAllocation;
 
+  // Known resource types
   public static final String MEMORY_URI = "memory-mb";
   public static final String VCORES_URI = "vcores";
+  public static final String GPU_URI = "yarn.io/gpu";
 
   public static final ResourceInformation MEMORY_MB =
       ResourceInformation.newInstance(MEMORY_URI, "Mi");
