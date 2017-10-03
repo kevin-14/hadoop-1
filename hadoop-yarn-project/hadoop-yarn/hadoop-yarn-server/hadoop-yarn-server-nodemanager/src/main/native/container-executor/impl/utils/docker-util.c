@@ -206,6 +206,8 @@ const char *get_docker_error_message(const int error_code) {
       return "Mount access error";
     case INVALID_DOCKER_DEVICE:
       return "Invalid docker device";
+    case INVALID_DOCKER_VOLUME_DRIVER:
+      return "Invalid docker volume-driver";
     default:
       return "Unknown error";
   }
@@ -530,6 +532,24 @@ static int set_cgroup_parent(const struct configuration *command_config, char *o
 
 static int set_hostname(const struct configuration *command_config, char *out, const size_t outlen) {
   return add_param_to_command(command_config, "hostname", "--hostname=", 1, out, outlen);
+}
+
+static int set_volume_driver(const struct configuration *command_config,
+                             const struct configuration *conf,
+                             char *out, const size_t outlen) {
+  int ret = 0;
+  ret = add_param_to_command_if_allowed(command_config, conf, "volume-driver",
+                                        "docker.allowed.volume-drivers",
+                                        "--volume-driver=",
+                                        0, 0, out, outlen);
+  if (ret != 0) {
+    fprintf(ERRORFILE,
+      "Could not find requested volume-driver in allowed volume-drivers\n");
+    ret = INVALID_DOCKER_VOLUME_DRIVER;
+    memset(out, 0, outlen);
+  }
+
+  return ret;
 }
 
 static int set_group_add(const struct configuration *command_config, char *out, const size_t outlen) {
@@ -925,6 +945,11 @@ int get_docker_run_command(const char *command_file, const struct configuration 
   }
 
   ret = set_network(&command_config, conf, out, outlen);
+  if (ret != 0) {
+    return ret;
+  }
+
+  ret = set_volume_driver(&command_config, conf, out, outlen);
   if (ret != 0) {
     return ret;
   }

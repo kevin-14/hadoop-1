@@ -24,6 +24,7 @@ import org.apache.hadoop.yarn.server.nodemanager.containermanager.linux.privileg
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.linux.resources.CGroupsHandler;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.linux.resources.ResourceHandler;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.linux.resources.gpu.GpuResourceHandlerImpl;
+import org.apache.hadoop.yarn.server.nodemanager.containermanager.resourceplugin.DockerCommandPlugin;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.resourceplugin.NodeResourceUpdaterPlugin;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.resourceplugin.ResourcePlugin;
 
@@ -52,5 +53,10 @@ public class GpuResourcePlugin implements ResourcePlugin {
   @Override
   public synchronized NodeResourceUpdaterPlugin getNodeResourceHandlerInstance() {
     return resourceDiscoverHandler;
+  }
+
+  @Override
+  public DockerCommandPlugin getDockerCommandPluginInstance() {
+    return null;
   }
 }

@@ -1119,4 +1119,58 @@ namespace ContainerExecutor {
     }
   }
 
+  TEST_F(TestDockerUtil, test_set_volume_driver) {
+    struct configuration container_cfg;
+    const int buff_len = 1024;
+    char buff[buff_len];
+    int ret = 0;
+    std::string container_executor_cfg_contents = "[docker]\n  docker.allowed.volume-drivers=driver-1,driver-2";
+    std::vector<std::pair<std::string, std::string> > file_cmd_vec;
+    file_cmd_vec.push_back(std::make_pair<std::string, std::string>(
+        "[docker-command-execution]\n  docker-command=run\n  volume-driver=driver-1", "--volume-driver='driver-1' "));
+    file_cmd_vec.push_back(std::make_pair<std::string, std::string>(
+        "[docker-command-execution]\n  docker-command=run\n  volume-driver=driver-2", "--volume-driver='driver-2' "));
+    file_cmd_vec.push_back(std::make_pair<std::string, std::string>(
+        "[docker-command-execution]\n  docker-command=run", ""));
+    write_container_executor_cfg(container_executor_cfg_contents);
+    ret = read_config(container_executor_cfg_file.c_str(), &container_cfg);
+
+    std::vector<std::pair<std::string, std::string> >::const_iterator itr;
+    if (ret != 0) {
+      FAIL();
+    }
+    for (itr = file_cmd_vec.begin(); itr != file_cmd_vec.end(); ++itr) {
+      struct configuration cmd_cfg;
+      memset(buff, 0, buff_len);
+      write_command_file(itr->first);
+      ret = read_config(docker_command_file.c_str(), &cmd_cfg);
+      if (ret != 0) {
+        FAIL();
+      }
+      ret = set_volume_driver(&cmd_cfg, &container_cfg, buff, buff_len);
+      ASSERT_EQ(0, ret);
+      ASSERT_STREQ(itr->second.c_str(), buff);
+    }
+    struct configuration cmd_cfg_1;
+    write_command_file("[docker-command-execution]\n  docker-command=run\n volume-driver=driver-3");
+    ret = read_config(docker_command_file.c_str(), &cmd_cfg_1);
+    if (ret != 0) {
+      FAIL();
+    }
+    strcpy(buff, "test string");
+    ret = set_volume_driver(&cmd_cfg_1, &container_cfg, buff, buff_len);
+    ASSERT_EQ(INVALID_DOCKER_VOLUME_DRIVER, ret);
+    ASSERT_EQ(0, strlen(buff));
+
+    container_executor_cfg_contents = "[docker]\n";
+    write_container_executor_cfg(container_executor_cfg_contents);
+    ret = read_config(container_executor_cfg_file.c_str(), &container_cfg);
+    if (ret != 0) {
+      FAIL();
+    }
+    strcpy(buff, "test string");
+    ret = set_volume_driver(&cmd_cfg_1, &container_cfg, buff, buff_len);
+    ASSERT_EQ(INVALID_DOCKER_VOLUME_DRIVER, ret);
+    ASSERT_EQ(0, strlen(buff));
+  }
 }
