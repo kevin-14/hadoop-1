@@ -1404,6 +1404,17 @@ public class YarnConfiguration extends Configuration {
   @Private
   public static final String DEFAULT_NM_GPU_PATH_TO_EXEC = "";
 
+  /**
+   * This setting controls end point of nvidia-docker-plugin
+   */
+  @Private
+  public static final String NVIDIA_DOCKER_PLUGIN_ENDPOINT =
+      NM_GPU_RESOURCE_PREFIX + "nvidia-docker-plugin-endpoint";
+
+  @Private
+  public static final String DEFAULT_NVIDIA_DOCKER_PLUGIN_ENDPOINT =
+      "http://localhost:3476/v1.0/docker/cli";
+
 
   /** NM Webapp address.**/
   public static final String NM_WEBAPP_ADDRESS = NM_PREFIX + "webapp.address";

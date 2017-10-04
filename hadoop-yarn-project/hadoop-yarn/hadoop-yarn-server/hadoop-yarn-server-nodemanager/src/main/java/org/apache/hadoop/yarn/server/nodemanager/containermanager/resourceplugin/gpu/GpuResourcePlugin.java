@@ -31,11 +31,14 @@ import org.apache.hadoop.yarn.server.nodemanager.containermanager.resourceplugin
 public class GpuResourcePlugin implements ResourcePlugin {
   private ResourceHandler gpuResourceHandler = null;
   private GpuNodeResourceUpdateHandler resourceDiscoverHandler = null;
+  private GpuDockerCommandPlugin dockerCommandPlugin = null;
 
   @Override
   public synchronized void initialize(Context context) throws YarnException {
     resourceDiscoverHandler = new GpuNodeResourceUpdateHandler();
     GpuDiscoverer.getInstance().initialize(context.getConf());
+    dockerCommandPlugin = new GpuDockerCommandPlugin(context.getConf(),
+        context);
   }
 
   @Override
