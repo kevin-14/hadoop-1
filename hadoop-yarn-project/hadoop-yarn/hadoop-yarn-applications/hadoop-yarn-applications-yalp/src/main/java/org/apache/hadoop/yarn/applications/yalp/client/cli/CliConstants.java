@@ -32,5 +32,6 @@ public class CliConstants {
   public static final String TENSORBOARD = "tensorboard";
   public static final String WORKER_LAUNCH_CMD = "worker_launch_cmd";
   public static final String PS_LAUNCH_CMD = "ps_launch_cmd";
+  public static final String ENV = "env";
 
 }

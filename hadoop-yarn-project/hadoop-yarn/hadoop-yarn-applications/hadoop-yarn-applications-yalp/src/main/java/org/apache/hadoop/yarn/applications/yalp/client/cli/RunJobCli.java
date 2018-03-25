@@ -33,6 +33,7 @@ import org.apache.hadoop.yarn.util.UnitsConversionUtil;
 import org.apache.hadoop.yarn.util.resource.ResourceUtils;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -74,6 +75,8 @@ public class RunJobCli extends AbstractCli{
     options.addOption(CliConstants.PS_LAUNCH_CMD, true,
         "Commandline of worker, arguments will be "
             + "directly used to launch the PS");
+    options.addOption(CliConstants.ENV, true,
+        "Common environment variable of worker/ps");
     return options;
   }
 
@@ -198,12 +201,23 @@ public class RunJobCli extends AbstractCli{
     String workerLaunchCmd = cli.getOptionValue(CliConstants.WORKER_LAUNCH_CMD);
     String psLaunchCommand = cli.getOptionValue(CliConstants.PS_LAUNCH_CMD);
 
+    // Envars
+    List<String> envarsList = null;
+    String[] envars = cli.getOptionValues(CliConstants.ENV);
+    if (envars != null) {
+      envarsList = new ArrayList<>();
+      for (String envar : envars) {
+        envarsList.add(envar);
+      }
+    }
+
     RunJobParameters param = new RunJobParameters();
     param.setInput(input).setJobName(name).setNumPS(nPS).setNumWorkers(nWorkers)
         .setOutput(output).setPsResource(psResource).setWorkerResource(
         workerResource).setTensorboardEnabled(tensorboard).setWorkerLaunchCmd(
         workerLaunchCmd).setPSLaunchCmd(psLaunchCommand).setDockerImageName(
-        dockerImage);
+        dockerImage).setEnvars(envarsList);
+
     return param;
   }
 

@@ -154,7 +154,8 @@ public class JobSubmitter {
         fileStatus.getPath().toUri().toString()).destFile(destScriptFileName)
         .type(YAML));
 
-    component.setLaunchCommand("bash -c " + destScriptFileName);
+    // TODO, file should not be automatically put to ./conf
+    component.setLaunchCommand("bash -c ./conf/" + destScriptFileName);
   }
 
   private void addCommonEnvironments(Component component, TaskType taskType) {
@@ -171,6 +172,19 @@ public class JobSubmitter {
     service.setArtifact(new Artifact().type(Artifact.TypeEnum.DOCKER)
         .id(parameters.getDockerImageName()));
 
+    if (parameters.getEnvars() != null) {
+      for (String envarPair : parameters.getEnvars()) {
+        if (envarPair.contains("=")) {
+          int idx = envarPair.indexOf('=');
+          String key = envarPair.substring(0, idx);
+          String value = envarPair.substring(idx + 1);
+          service.getConfiguration().getEnv().put(key, value);
+        } else{
+          // No "=" found so use the whole key
+          service.getConfiguration().getEnv().put(envarPair, "");
+        }
+      }
+    }
 
     Component workerComponent = new Component();
     addCommonEnvironments(workerComponent, TaskType.WORKER);

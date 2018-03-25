@@ -16,6 +16,9 @@ package org.apache.hadoop.yarn.applications.yalp.client.common;
 
 import org.apache.hadoop.yarn.api.records.Resource;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  * Parameters used to run a job
  */
@@ -32,6 +35,8 @@ public class RunJobParameters {
   private String workerLaunchCmd;
   private String psLaunchCmd;
   private String dockerImageName;
+
+  private List<String> envars;
 
   public String getDockerImageName() {
     return dockerImageName;
@@ -139,6 +144,15 @@ public class RunJobParameters {
 
   public RunJobParameters setPSLaunchCmd(String psLaunchCmd) {
     this.psLaunchCmd = psLaunchCmd;
+    return this;
+  }
+
+  public List<String> getEnvars() {
+    return envars;
+  }
+
+  public RunJobParameters setEnvars(List<String> envars) {
+    this.envars = envars;
     return this;
   }
 }
