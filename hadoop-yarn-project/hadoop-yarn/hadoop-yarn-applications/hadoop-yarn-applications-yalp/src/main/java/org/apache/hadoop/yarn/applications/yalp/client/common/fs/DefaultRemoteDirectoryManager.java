@@ -44,8 +44,7 @@ public class DefaultRemoteDirectoryManager implements RemoteDirectoryManager {
   }
 
   private Path getJobRootFolder(String jobName) throws IOException {
-    return new Path(UserGroupInformation.getCurrentUser().getUserName()
-        + "/yalp/ + jobName");
+    return new Path("yalp", jobName);
   }
 
   private void createFolderIfNotExist(Path path) throws IOException {

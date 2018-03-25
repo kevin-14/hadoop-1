@@ -14,6 +14,7 @@
 
 package org.apache.hadoop.yarn.applications.yalp.client;
 
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.yarn.applications.yalp.client.common.ClientContext;
@@ -29,6 +30,8 @@ import org.apache.hadoop.yarn.service.api.records.Resource;
 import org.apache.hadoop.yarn.service.api.records.ResourceInformation;
 import org.apache.hadoop.yarn.service.api.records.Service;
 import org.apache.hadoop.yarn.service.client.ServiceClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -42,6 +45,8 @@ import static org.apache.hadoop.yarn.service.api.records.ConfigFile.TypeEnum.YAM
  * Submit a job to cluster
  */
 public class JobSubmitter {
+  private static final Logger LOG =
+      LoggerFactory.getLogger(JobSubmitter.class);
   ClientContext clientContext;
 
   public JobSubmitter(ClientContext clientContext) {
@@ -70,8 +75,9 @@ public class JobSubmitter {
 
   private void addHdfsClassPathIfNeeded(RunJobParameters parameters,
       FileWriter fw) throws IOException {
-    if (parameters.getInput().contains("hdfs://") || parameters.getOutput()
-        .contains("hdfs://")) {
+    if ((parameters.getInput() != null && parameters.getInput().contains(
+        "hdfs://")) || (parameters.getOutput() != null && parameters.getOutput()
+        .contains("hdfs://"))) {
       // HDFS is asked either in input or output, set LD_LIBRARY_PATH
       // and classpath
       fw.append("export LD_LIBRARY_PATH=`hadoop jnipath`\n");
@@ -140,11 +146,13 @@ public class JobSubmitter {
     String destScriptFileName = getScriptFileName(taskType);
     Path destScriptPath = new Path(stagingDir, destScriptFileName);
     fs.copyFromLocalFile(new Path(localScriptFile), destScriptPath);
+    FileStatus fileStatus = fs.getFileStatus(destScriptPath);
+    LOG.info("Uploaded file path = " + fileStatus.getPath());
 
     // Set it to component's files list
-    component.getConfiguration().getFiles().add(
-        new ConfigFile().srcFile(destScriptPath.toString())
-            .destFile(destScriptFileName).type(YAML));
+    component.getConfiguration().getFiles().add(new ConfigFile().srcFile(
+        fileStatus.getPath().toUri().toString()).destFile(destScriptFileName)
+        .type(YAML));
 
     component.setLaunchCommand("bash -c " + destScriptFileName);
   }

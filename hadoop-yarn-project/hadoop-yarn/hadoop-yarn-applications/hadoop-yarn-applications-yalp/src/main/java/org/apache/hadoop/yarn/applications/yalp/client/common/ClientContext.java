@@ -38,6 +38,8 @@ public class ClientContext {
   public synchronized YarnClient getOrCreateYarnClient() {
     if (yarnClient == null) {
       yarnClient = YarnClient.createYarnClient();
+      yarnClient.init(conf);
+      yarnClient.start();
     }
     return yarnClient;
   }

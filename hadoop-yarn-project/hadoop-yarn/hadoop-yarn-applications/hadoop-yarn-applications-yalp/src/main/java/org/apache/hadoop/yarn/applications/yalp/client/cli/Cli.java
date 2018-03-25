@@ -53,6 +53,9 @@ public class Cli {
       // else TODO
     } else if (args[0].equals("model")) {
       new ModelCli(clientContext).run(Arrays.copyOfRange(args, 1, args.length));
+    } else {
+      printHelp();
+      throw new IllegalArgumentException("TODO: only support ... args");
     }
   }
 }
