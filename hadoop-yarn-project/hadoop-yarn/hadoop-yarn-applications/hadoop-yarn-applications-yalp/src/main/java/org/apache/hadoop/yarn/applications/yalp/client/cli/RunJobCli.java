@@ -1,5 +1,20 @@
-package org.apache.hadoop.yarn.applications.yalp.client.cli.job;
+/**
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License. See accompanying LICENSE file.
+ */
 
+package org.apache.hadoop.yarn.applications.yalp.client.cli;
+
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -8,24 +23,27 @@ import org.apache.commons.cli.ParseException;
 import org.apache.hadoop.yarn.api.records.Resource;
 import org.apache.hadoop.yarn.api.records.ResourceInformation;
 import org.apache.hadoop.yarn.api.records.ResourceTypeInfo;
-import org.apache.hadoop.yarn.applications.yalp.client.RunJobParameters;
-import org.apache.hadoop.yarn.applications.yalp.client.cli.AbstractCli;
-import org.apache.hadoop.yarn.applications.yalp.client.cli.ClientContext;
-import org.apache.hadoop.yarn.applications.yalp.client.cli.CliConstants;
+import org.apache.hadoop.yarn.applications.yalp.client.JobSubmitter;
+import org.apache.hadoop.yarn.applications.yalp.client.common.ClientContext;
+import org.apache.hadoop.yarn.applications.yalp.client.common.RunJobParameters;
 import org.apache.hadoop.yarn.exceptions.ResourceNotFoundException;
 import org.apache.hadoop.yarn.exceptions.YarnException;
+import org.apache.hadoop.yarn.service.api.records.Service;
 import org.apache.hadoop.yarn.util.UnitsConversionUtil;
 import org.apache.hadoop.yarn.util.resource.ResourceUtils;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class RunJobCli extends AbstractCli{
+  private Options options;
+  private Service serviceSpec;
+
   public RunJobCli(ClientContext cliContext) {
     super(cliContext);
+    options = generateOptions();
   }
 
   private Options generateOptions() {
@@ -38,7 +56,7 @@ public class RunJobCli extends AbstractCli{
     options.addOption(CliConstants.N_WORKERS, true,
         "Numnber of worker tasks of the job, by default it's 1");
     options.addOption(CliConstants.N_PS, true,
-        "Numnber of PS tasks of the job, by default it's 0");
+        "Number of PS tasks of the job, by default it's 0");
     options.addOption(CliConstants.WORKER_RES, true,
         "Resource of each worker, for example "
             + "memory-mb=2048,vcores=2,yarn.io/gpu=2");
@@ -51,12 +69,16 @@ public class RunJobCli extends AbstractCli{
     options.addOption(CliConstants.TENSORBOARD, true, "Should we run TensorBoard"
         + " for this job? By default it's true");
     options.addOption(CliConstants.WORKER_LAUNCH_CMD, true,
-        "Commandline of worker, all arguments after this command will be "
-            + "directly passed to launch the worker");
+        "Commandline of worker, arguments will be "
+            + "directly used to launch the worker");
+    options.addOption(CliConstants.PS_LAUNCH_CMD, true,
+        "Commandline of worker, arguments will be "
+            + "directly used to launch the PS");
     return options;
   }
 
-  private void printUsages(Options options) {
+  @VisibleForTesting
+  public void printUsages() {
     new HelpFormatter().printHelp("run", options);
   }
 
@@ -120,34 +142,15 @@ public class RunJobCli extends AbstractCli{
     return resource;
   }
 
-  @Override
-  public void run(String[] args)
+  private RunJobParameters parseCommandLineAndGetRunJobParameters(String[] args)
       throws ParseException, IOException, YarnException {
-    Options options = generateOptions();
-
-    // Search for WORKER_LAUNCH_CMD, and skip all followed commands
-    int i;
-    for (i = 0; i < args.length; i++) {
-      if (args[i].equals("--" + CliConstants.WORKER_LAUNCH_CMD) || args[i].equals(
-          "-" + CliConstants.WORKER_LAUNCH_CMD)) {
-        break;
-      }
-    }
-
-    String[] launchArgs = null;
-    String[] argsForParsing = args;
-    if (i < args.length) {
-      argsForParsing = Arrays.copyOfRange(args, 0, i);
-      launchArgs = Arrays.copyOfRange(args, i + 1, args.length);
-    }
-
     // Do parsing
     GnuParser parser = new GnuParser();
-    CommandLine cli = parser.parse(options, argsForParsing);
+    CommandLine cli = parser.parse(options, args);
 
     String name = cli.getOptionValue(CliConstants.NAME);
     if (name == null) {
-      printUsages(options);
+      printUsages();
       throw new ParseException("--name is absent");
     }
 
@@ -165,7 +168,7 @@ public class RunJobCli extends AbstractCli{
 
     String workerResourceStr = cli.getOptionValue(CliConstants.WORKER_RES);
     if (workerResourceStr == null) {
-      printUsages(options);
+      printUsages();
       throw new ParseException("--" + CliConstants.WORKER_RES + " is absent.");
     }
     Resource workerResource = createResourceFromString(workerResourceStr);
@@ -174,7 +177,7 @@ public class RunJobCli extends AbstractCli{
     if (nPS > 0) {
       String psResourceStr = cli.getOptionValue(CliConstants.PS_RES);
       if (psResourceStr == null) {
-        printUsages(options);
+        printUsages();
         throw new ParseException("--" + CliConstants.PS_RES + " is absent.");
       }
       psResource = createResourceFromString(psResourceStr);
@@ -182,7 +185,7 @@ public class RunJobCli extends AbstractCli{
 
     String dockerImage = cli.getOptionValue(CliConstants.DOCKER_IMAGE);
     if (dockerImage == null) {
-      printUsages(options);
+      printUsages();
       throw new ParseException("--" + CliConstants.DOCKER_IMAGE + " is absent.");
     }
 
@@ -192,10 +195,29 @@ public class RunJobCli extends AbstractCli{
           cli.getOptionValue(CliConstants.TENSORBOARD));
     }
 
+    String workerLaunchCmd = cli.getOptionValue(CliConstants.WORKER_LAUNCH_CMD);
+    String psLaunchCommand = cli.getOptionValue(CliConstants.PS_LAUNCH_CMD);
+
     RunJobParameters param = new RunJobParameters();
-    param.setInput(input).setName(name).setNumPS(nPS).setNumWorkers(nWorkers)
+    param.setInput(input).setJobName(name).setNumPS(nPS).setNumWorkers(nWorkers)
         .setOutput(output).setPsResource(psResource).setWorkerResource(
         workerResource).setTensorboardEnabled(tensorboard).setWorkerLaunchCmd(
-        launchArgs).setDockerImageName(dockerImage);
+        workerLaunchCmd).setPSLaunchCmd(psLaunchCommand).setDockerImageName(
+        dockerImage);
+    return param;
+  }
+
+  @Override
+  public void run(String[] args)
+      throws ParseException, IOException, YarnException {
+    RunJobParameters parameters = parseCommandLineAndGetRunJobParameters(args);
+
+    JobSubmitter jobSubmitter = new JobSubmitter(cliContext);
+    serviceSpec = jobSubmitter.runJob(parameters);
+  }
+
+  @VisibleForTesting
+  Service getServiceSpec() {
+    return serviceSpec;
   }
 }

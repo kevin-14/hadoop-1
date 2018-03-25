@@ -12,21 +12,17 @@
  * limitations under the License. See accompanying LICENSE file.
  */
 
-package org.apache.hadoop.yarn.applications.yalp.client.cli;
+package org.apache.hadoop.yarn.applications.yalp.client.common.network;
 
-import org.apache.commons.cli.ParseException;
-import org.apache.hadoop.yarn.applications.yalp.client.common.ClientContext;
-import org.apache.hadoop.yarn.exceptions.YarnException;
+import java.util.Random;
 
-import java.io.IOException;
-
-public abstract class AbstractCli {
-  protected ClientContext cliContext;
-
-  public AbstractCli(ClientContext cliContext) {
-    this.cliContext = cliContext;
+public class RandomTaskNetworkPortManagerImpl implements TaskNetworkPortManager {
+  @Override
+  public int getPort(String serviceName, String taskType, int index) {
+    // Get port 49152-59152 according to IANA recommendations of ephermeral port
+    Random random = new Random(
+        serviceName.hashCode() * 37 + taskType.hashCode() * 19 + index);
+    int port = 49152 + random.nextInt(10000);
+    return port;
   }
-
-  public abstract void run(String[] args)
-      throws ParseException, IOException, YarnException;
 }

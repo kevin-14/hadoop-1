@@ -14,7 +14,10 @@
 
 package org.apache.hadoop.yarn.applications.yalp.client.cli;
 
-import org.apache.hadoop.yarn.applications.yalp.client.cli.job.RunJobCli;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.yarn.applications.yalp.client.common.ClientContext;
+import org.apache.hadoop.yarn.applications.yalp.client.common.fs.DefaultRemoteDirectoryManager;
+import org.apache.hadoop.yarn.conf.YarnConfiguration;
 
 import java.util.Arrays;
 
@@ -23,22 +26,33 @@ public class Cli {
     // TODO;
   }
 
+  private static ClientContext getClientContext() {
+    Configuration conf = new YarnConfiguration();
+    ClientContext clientContext = new ClientContext();
+    clientContext.setConfiguration(conf);
+    clientContext.setRemoteDirectoryManager(
+        new DefaultRemoteDirectoryManager(clientContext));
+    return clientContext;
+  }
+
   public static void main(String[] args) throws Exception {
     if (args.length < 2) {
       printHelp();
+      // TODO
       throw new IllegalArgumentException("TODO");
     }
 
     String[] moduleArgs = Arrays.copyOfRange(args, 2, args.length);
+    ClientContext clientContext = getClientContext();
 
     if (args[0].equals("job")) {
       String subCmd = args[1];
       if (subCmd.equals(CliConstants.RUN)) {
-        new RunJobCli().run(moduleArgs);
+        new RunJobCli(clientContext).run(moduleArgs);
       }
       // else TODO
     } else if (args[0].equals("model")) {
-      new ModelCli().run(Arrays.copyOfRange(args, 1, args.length));
+      new ModelCli(clientContext).run(Arrays.copyOfRange(args, 1, args.length));
     }
   }
 }

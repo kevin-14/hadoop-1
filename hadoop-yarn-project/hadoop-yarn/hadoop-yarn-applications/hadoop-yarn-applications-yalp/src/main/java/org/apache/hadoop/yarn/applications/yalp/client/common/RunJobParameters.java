@@ -1,4 +1,18 @@
-package org.apache.hadoop.yarn.applications.yalp.client;
+/**
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License. See accompanying LICENSE file.
+ */
+
+package org.apache.hadoop.yarn.applications.yalp.client.common;
 
 import org.apache.hadoop.yarn.api.records.Resource;
 
@@ -15,7 +29,8 @@ public class RunJobParameters {
   private Resource psResource;
   private String queue;
   private boolean tensorboardEnabled;
-  private String[] workerLaunchCmd;
+  private String workerLaunchCmd;
+  private String psLaunchCmd;
   private String dockerImageName;
 
   public String getDockerImageName() {
@@ -28,11 +43,11 @@ public class RunJobParameters {
   }
 
 
-  public String getName() {
+  public String getJobName() {
     return name;
   }
 
-  public RunJobParameters setName(String name) {
+  public RunJobParameters setJobName(String name) {
     this.name = name;
     return this;
   }
@@ -109,12 +124,21 @@ public class RunJobParameters {
     return this;
   }
 
-  public String[] getWorkerLaunchCmd() {
+  public String getWorkerLaunchCmd() {
     return workerLaunchCmd;
   }
 
-  public RunJobParameters setWorkerLaunchCmd(String[] workerLaunchCmd) {
+  public RunJobParameters setWorkerLaunchCmd(String workerLaunchCmd) {
     this.workerLaunchCmd = workerLaunchCmd;
+    return this;
+  }
+
+  public String getPSLaunchCmd() {
+    return psLaunchCmd;
+  }
+
+  public RunJobParameters setPSLaunchCmd(String psLaunchCmd) {
+    this.psLaunchCmd = psLaunchCmd;
     return this;
   }
 }

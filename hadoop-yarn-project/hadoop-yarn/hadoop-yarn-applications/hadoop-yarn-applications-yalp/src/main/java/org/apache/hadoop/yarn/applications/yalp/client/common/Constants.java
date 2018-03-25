@@ -12,21 +12,12 @@
  * limitations under the License. See accompanying LICENSE file.
  */
 
-package org.apache.hadoop.yarn.applications.yalp.client.cli;
+package org.apache.hadoop.yarn.applications.yalp.client.common;
 
-import org.apache.commons.cli.ParseException;
-import org.apache.hadoop.yarn.applications.yalp.client.common.ClientContext;
-import org.apache.hadoop.yarn.exceptions.YarnException;
+public class Constants {
+  public static final String WORKER_COMPONENT_NAME = "worker";
+  public static final String PS_COMPONENT_NAME = "ps";
 
-import java.io.IOException;
-
-public abstract class AbstractCli {
-  protected ClientContext cliContext;
-
-  public AbstractCli(ClientContext cliContext) {
-    this.cliContext = cliContext;
-  }
-
-  public abstract void run(String[] args)
-      throws ParseException, IOException, YarnException;
+  public static final String YALP_TASK_TYPE_ENV = "YALP_TASK_TYPE";
+  public static final String YALP_TASK_INDEX_ENV = "YALP_TASK_INDEX";
 }
