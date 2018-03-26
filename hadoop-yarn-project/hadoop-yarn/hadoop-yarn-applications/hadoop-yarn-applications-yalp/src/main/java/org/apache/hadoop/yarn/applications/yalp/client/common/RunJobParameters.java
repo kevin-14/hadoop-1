@@ -17,7 +17,6 @@ package org.apache.hadoop.yarn.applications.yalp.client.common;
 import org.apache.hadoop.yarn.api.records.Resource;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * Parameters used to run a job

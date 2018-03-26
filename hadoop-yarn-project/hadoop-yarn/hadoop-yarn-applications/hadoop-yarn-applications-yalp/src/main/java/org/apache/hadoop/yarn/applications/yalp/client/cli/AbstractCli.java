@@ -21,12 +21,12 @@ import org.apache.hadoop.yarn.exceptions.YarnException;
 import java.io.IOException;
 
 public abstract class AbstractCli {
-  protected ClientContext cliContext;
+  protected ClientContext clientContext;
 
   public AbstractCli(ClientContext cliContext) {
-    this.cliContext = cliContext;
+    this.clientContext = cliContext;
   }
 
   public abstract void run(String[] args)
-      throws ParseException, IOException, YarnException;
+      throws ParseException, IOException, YarnException, InterruptedException;
 }

@@ -38,11 +38,11 @@ Scratch board:
 --
 wtan/tf-1.6.0-cuda9:0.0.1
 
-cd /test/models/tutorials/image/cifar10_estimator/ && python generate_cifar10_tfrecords.py --data-dir=${PWD}/cifar-10-data && python cifar10_main.py --data-dir=${PWD}/cifar-10-data --job-dir=/tmp/cifar10 --num-gpus=2 --train-steps=1000
+cd /test/models/tutorials/image/cifar10_estimator/ && python generate_cifar10_tfrecords.py --data-dir=cifar-10-data && python cifar10_main.py --data-dir=cifar-10-data --job-dir=/tmp/cifar10 --num-gpus=2 --train-steps=1000
 
 *Single node run command* 
 ```
-yarn yalp job run --docker_image wtan/tf-1.6.0-cuda9:0.0.1 --name wangda-tf-job-16 --num_workers 1 --output /tmp/cifar10 --tensorboard true --worker_resources memory=20480,vcores=32,yarn.io/gpu=2 --worker_launch_cmd "cd /test/models/tutorials/image/cifar10_estimator/ && pwd && python generate_cifar10_tfrecords.py --data-dir=`pwd`/cifar-10-data && python cifar10_main.py --data-dir=`pwd`/cifar-10-data --job-dir=/tmp/cifar10 --num-gpus=2 --train-steps=1000" --env LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/nvidia/lib64/
+yarn yalp job run --docker_image wtan/tf-1.6.0-cuda9:0.0.1 --name wangda-tf-job-16 --num_workers 1 --output /tmp/cifar10 --tensorboard true --worker_resources memory=20480,vcores=32,yarn.io/gpu=2 --worker_launch_cmd "cd /test/models/tutorials/image/cifar10_estimator/ && PWD=`pwd` && echo ${PWD} && python generate_cifar10_tfrecords.py --data-dir=cifar-10-data && python cifar10_main.py --data-dir=cifar-10-data --job-dir=/tmp/cifar10 --num-gpus=2 --train-steps=1000" --env LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/nvidia/lib64/
 ```
 --
 

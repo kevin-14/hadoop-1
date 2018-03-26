@@ -18,9 +18,13 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.yarn.applications.yalp.client.common.fs.RemoteDirectoryManager;
 import org.apache.hadoop.yarn.applications.yalp.client.common.network.RandomTaskNetworkPortManagerImpl;
 import org.apache.hadoop.yarn.applications.yalp.client.common.network.TaskNetworkPortManager;
+import org.apache.hadoop.yarn.applications.yalp.client.monitor.JobMonitor;
 import org.apache.hadoop.yarn.client.api.YarnClient;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.service.client.ServiceClient;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ClientContext {
   private Configuration conf = new YarnConfiguration();
@@ -29,10 +33,14 @@ public class ClientContext {
   private TaskNetworkPortManager taskNetworkPortManager;
   private YarnClient yarnClient;
   private ServiceClient serviceClient;
+  private Map<String, RunJobParameters> cachedRunJobParameters =
+      new ConcurrentHashMap<>();
+  private JobMonitor jobMonitor;
 
   public ClientContext() {
     this.taskNetworkPortManager =
         new RandomTaskNetworkPortManagerImpl();
+    this.jobMonitor = new JobMonitor();
   }
 
   public synchronized YarnClient getOrCreateYarnClient() {
@@ -72,5 +80,17 @@ public class ClientContext {
       serviceClient.start();
     }
     return serviceClient;
+  }
+
+  public RunJobParameters getRunJobParameters(String jobName) {
+    return cachedRunJobParameters.get(jobName);
+  }
+
+  public void addRunJobParameters(String jobName, RunJobParameters parameters) {
+    cachedRunJobParameters.put(jobName, parameters);
+  }
+
+  public JobMonitor getJobMonitor() {
+    return jobMonitor;
   }
 }

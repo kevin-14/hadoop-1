@@ -88,7 +88,7 @@ public class RunJobCli extends AbstractCli{
   private void validateResourceTypes(Iterable<String> resourceNames)
       throws IOException, YarnException {
     List<ResourceTypeInfo> resourceTypes =
-        cliContext.getOrCreateYarnClient().getResourceTypeInfo();
+        clientContext.getOrCreateYarnClient().getResourceTypeInfo();
     for (String resourceName : resourceNames) {
       if (!resourceTypes.stream().anyMatch(e ->
           e.getName().equals(resourceName))) {
@@ -223,11 +223,16 @@ public class RunJobCli extends AbstractCli{
 
   @Override
   public void run(String[] args)
-      throws ParseException, IOException, YarnException {
+      throws ParseException, IOException, YarnException, InterruptedException {
     RunJobParameters parameters = parseCommandLineAndGetRunJobParameters(args);
 
-    JobSubmitter jobSubmitter = new JobSubmitter(cliContext);
+    clientContext.addRunJobParameters(parameters.getJobName(), parameters);
+
+    JobSubmitter jobSubmitter = new JobSubmitter(clientContext);
     serviceSpec = jobSubmitter.runJob(parameters);
+
+    clientContext.getJobMonitor().waitTrainingJobReadyOrFinal(
+        parameters.getJobName(), clientContext);
   }
 
   @VisibleForTesting

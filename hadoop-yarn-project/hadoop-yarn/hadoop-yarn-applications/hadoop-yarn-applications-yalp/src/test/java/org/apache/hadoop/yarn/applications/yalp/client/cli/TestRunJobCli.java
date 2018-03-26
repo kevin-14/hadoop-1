@@ -18,16 +18,12 @@
 
 package org.apache.hadoop.yarn.applications.yalp.client.cli;
 
-import org.apache.commons.cli.ParseException;
 import org.apache.hadoop.yarn.applications.yalp.client.common.Constants;
 import org.apache.hadoop.yarn.applications.yalp.client.common.MockClientContext;
-import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.apache.hadoop.yarn.service.api.records.Component;
 import org.apache.hadoop.yarn.service.api.records.Service;
 import org.junit.Assert;
 import org.junit.Test;
-
-import java.io.IOException;
 
 public class TestRunJobCli {
   @Test
@@ -39,7 +35,7 @@ public class TestRunJobCli {
 
   @Test
   public void testBasicRunJob()
-      throws ParseException, YarnException, IOException {
+      throws Exception {
     MockClientContext mockClientContext = new MockClientContext();
     RunJobCli runJobCli = new RunJobCli(mockClientContext);
     runJobCli.run(
