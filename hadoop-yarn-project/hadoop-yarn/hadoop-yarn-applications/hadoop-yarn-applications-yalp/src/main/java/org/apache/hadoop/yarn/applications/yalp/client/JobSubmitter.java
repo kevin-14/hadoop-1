@@ -193,6 +193,7 @@ public class JobSubmitter {
     workerComponent.setResource(
         getServiceResourceFromYarnResource(parameters.getWorkerResource()));
     handleLaunchCommand(parameters, TaskType.WORKER, workerComponent);
+    workerComponent.setRestartPolicy(Component.RestartPolicyEnum.NEVER);
     service.addComponent(workerComponent);
 
     if (parameters.getNumPS() > 0) {
@@ -200,6 +201,7 @@ public class JobSubmitter {
       psComponent.setName(Constants.PS_COMPONENT_NAME);
       addCommonEnvironments(workerComponent, TaskType.PS);
       psComponent.setNumberOfContainers((long) parameters.getNumPS());
+      workerComponent.setRestartPolicy(Component.RestartPolicyEnum.NEVER);
       psComponent.setResource(
           getServiceResourceFromYarnResource(parameters.getPsResource()));
       handleLaunchCommand(parameters, TaskType.PS, psComponent);
