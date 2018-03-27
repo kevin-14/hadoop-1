@@ -18,6 +18,7 @@
 
 package org.apache.hadoop.yarn.service.component.instance;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.registry.client.api.RegistryConstants;
@@ -25,11 +26,12 @@ import org.apache.hadoop.registry.client.binding.RegistryPathUtils;
 import org.apache.hadoop.registry.client.binding.RegistryUtils;
 import org.apache.hadoop.registry.client.types.ServiceRecord;
 import org.apache.hadoop.registry.client.types.yarn.PersistencePolicies;
-import org.apache.hadoop.util.ExitUtil;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.yarn.api.records.Container;
+import org.apache.hadoop.yarn.api.records.ContainerExitStatus;
 import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.api.records.ContainerStatus;
+import org.apache.hadoop.yarn.api.records.FinalApplicationStatus;
 import org.apache.hadoop.yarn.api.records.NodeId;
 import org.apache.hadoop.yarn.client.api.NMClient;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
@@ -56,6 +58,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -92,6 +96,10 @@ public class ComponentInstance implements EventHandler<ComponentInstanceEvent>,
   private long containerStartedTime = 0;
   // This container object is used for rest API query
   private org.apache.hadoop.yarn.service.api.records.Container containerSpec;
+
+  // For unit test override since we don't want to terminate UT process.
+  static ServiceUtils.ProcessTerminationHandler terminationHandler =
+      new ServiceUtils.ProcessTerminationHandler();
 
   private static final StateMachineFactory<ComponentInstance,
       ComponentInstanceState, ComponentInstanceEventType, ComponentInstanceEvent>
@@ -203,6 +211,105 @@ public class ComponentInstance implements EventHandler<ComponentInstanceEvent>,
     }
   }
 
+  /*
+ * Check if all components of the scheduler finished.
+ * If all components finished
+ *   (which #failed-instances + #suceeded-instances = #total-n-containers)
+ * The service will be terminated.
+ */
+  private static void terminateServiceIfAllComponentsFinished(
+      ServiceScheduler scheduler) {
+    boolean shouldTerminate = true;
+
+    // Succeeded comps and failed comps, for logging purposes.
+    Set<String> succeededComponents = new HashSet<>();
+    Set<String> failedComponents = new HashSet<>();
+
+    for (Component comp : scheduler.getAllComponents().values()) {
+      int nSucceeded = comp.getSuceededInstances().get();
+      int nFailed = comp.getFailedInstances().get();
+      if (nSucceeded + nFailed < comp.getComponentSpec()
+          .getNumberOfContainers()) {
+        shouldTerminate = false;
+        break;
+      }
+      if (nFailed > 0) {
+        failedComponents.add(comp.getName());
+      } else {
+        succeededComponents.add(comp.getName());
+      }
+    }
+
+    if (shouldTerminate) {
+      LOG.info("All component finished, exiting Service Master... "
+          + ", final status=" + (failedComponents.isEmpty() ?
+          "Succeeded" :
+          "Failed"));
+      LOG.info(
+          "Succeeded components: [" + org.apache.commons.lang3.StringUtils
+              .join(succeededComponents, ",")
+              + "]");
+      LOG.info("Failed components: [" + org.apache.commons.lang3.StringUtils
+          .join(failedComponents, ",")
+          + "]");
+
+      if (!failedComponents.isEmpty()) {
+        scheduler.setGracefulStop(FinalApplicationStatus.FAILED);
+        terminationHandler.terminate(-1);
+      } else {
+        scheduler.setGracefulStop(FinalApplicationStatus.SUCCEEDED);
+        terminationHandler.terminate(0);
+      }
+    }
+  }
+
+  @VisibleForTesting
+  static void handleComponentInstanceRelaunch(
+      ComponentInstance compInstance, ComponentInstanceEvent event) {
+    Component comp = compInstance.getComponent();
+
+    // Do we need to relaunch the service?
+    boolean shouldRelaunch = false;
+    boolean succeeded = false;
+    if (event.getStatus() != null
+        && event.getStatus().getExitStatus() == ContainerExitStatus.SUCCESS) {
+      succeeded = true;
+    }
+
+    if (comp.getComponentSpec().getRestartPolicy()
+        == org.apache.hadoop.yarn.service.api.records.Component.RestartPolicyEnum.ALWAYS) {
+      // Unconditional relaunch if restart_policy == always.
+      shouldRelaunch = true;
+    } else if (comp.getComponentSpec().getRestartPolicy()
+        == org.apache.hadoop.yarn.service.api.records.Component.RestartPolicyEnum.ON_FAILURE
+        && (!succeeded)) {
+      // Relaunch for non-success exit code if restart_policy == on_failure.
+      shouldRelaunch = true;
+    }
+
+    if (shouldRelaunch) {
+      comp.reInsertPendingInstance(compInstance);
+      LOG.info(compInstance.getCompInstanceId()
+              + ": {} completed. Reinsert back to pending list and requested " +
+              "a new container." + System.lineSeparator() +
+              " exitStatus={}, diagnostics={}.",
+          event.getContainerId(), event.getStatus().getExitStatus(),
+          event.getStatus().getDiagnostics());
+    } else {
+      // When no relaunch, update component's #suceeded/#failed
+      // instances.
+      if (succeeded) {
+        comp.getSuceededInstances().incrementAndGet();
+      } else {
+        comp.getFailedInstances().incrementAndGet();
+      }
+      LOG.info(compInstance.getCompInstanceId() + (succeeded ?
+          " succeeded" :
+          " failed") + " without retry, exitStatus=" + event.getStatus());
+      terminateServiceIfAllComponentsFinished(comp.getScheduler());
+    }
+  }
+
   private static class ContainerStoppedTransition extends  BaseTransition {
     // whether the container failed before launched by AM or not.
     boolean failedBeforeLaunching = false;
@@ -230,7 +337,9 @@ public class ComponentInstance implements EventHandler<ComponentInstanceEvent>,
         compInstance.component.decContainersReady();
       }
       compInstance.component.decRunningContainers();
-      boolean shouldExit = false;
+
+      // Should we fail (terminate) the service?
+      boolean shouldFailService = false;
       // check if it exceeds the failure threshold
       if (comp.currentContainerFailure.get() > comp.maxContainerFailurePerComp) {
         String exitDiag = MessageFormat.format(
@@ -242,7 +351,7 @@ public class ComponentInstance implements EventHandler<ComponentInstanceEvent>,
         comp.getScheduler().getDiagnostics().append(containerDiag);
         comp.getScheduler().getDiagnostics().append(exitDiag);
         LOG.warn(exitDiag);
-        shouldExit = true;
+        shouldFailService = true;
       }
 
       if (!failedBeforeLaunching) {
@@ -266,23 +375,12 @@ public class ComponentInstance implements EventHandler<ComponentInstanceEvent>,
       // remove the failed ContainerId -> CompInstance mapping
       comp.getScheduler().removeLiveCompInstance(event.getContainerId());
 
-      comp.reInsertPendingInstance(compInstance);
+      // According to component restart policy, handle container restart
+      // or finish the service (if all components finished)
+      handleComponentInstanceRelaunch(compInstance, event);
 
-      LOG.info(compInstance.getCompInstanceId()
-              + ": {} completed. Reinsert back to pending list and requested " +
-              "a new container." + System.lineSeparator() +
-              " exitStatus={}, diagnostics={}.",
-          event.getContainerId(), event.getStatus().getExitStatus(),
-          event.getStatus().getDiagnostics());
-      if (shouldExit) {
-        // Sleep for 5 seconds in hope that the state can be recorded in ATS.
-        // in case there's a client polling the comp state, it can be notified.
-        try {
-          Thread.sleep(5000);
-        } catch (InterruptedException e) {
-          LOG.error("Interrupted on sleep while exiting.", e);
-        }
-        ExitUtil.terminate(-1);
+      if (shouldFailService) {
+        terminationHandler.terminate(-1);
       }
     }
   }

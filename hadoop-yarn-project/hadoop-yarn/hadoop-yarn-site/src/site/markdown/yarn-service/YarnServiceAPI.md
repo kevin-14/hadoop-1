@@ -233,6 +233,7 @@ One or more components of the service. If the service is HBase say, then the com
 |placement_policy|Advanced scheduling and placement policies for all containers of this component.|false|PlacementPolicy||
 |configuration|Config properties for this component.|false|Configuration||
 |quicklinks|A list of quicklink keys defined at the service level, and to be resolved by this component.|false|string array||
+|restart_policy|Restart policy of this component, could be NEVER/ALWAYS/ON_FAILURE|false|string|ALWAYS|
 
 
 ### ComponentState

@@ -26,6 +26,7 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.service.AbstractService;
 import org.apache.hadoop.util.ExitUtil;
 import org.apache.hadoop.yarn.api.ApplicationConstants;
+import org.apache.hadoop.yarn.api.records.FinalApplicationStatus;
 import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.apache.hadoop.yarn.ipc.YarnRPC;
 import org.apache.hadoop.yarn.proto.ClientAMProtocol.ComponentCountProto;
@@ -125,7 +126,7 @@ public class ClientAMService extends AbstractService
     LOG.info("Stop the service by {}", UserGroupInformation.getCurrentUser());
     context.scheduler.getDiagnostics()
         .append("Stopped by user " + UserGroupInformation.getCurrentUser());
-    context.scheduler.setGracefulStop();
+    context.scheduler.setGracefulStop(FinalApplicationStatus.ENDED);
 
     // Stop the service in 2 seconds delay to make sure this rpc call is completed.
     // shutdown hook will be executed which will stop AM gracefully.

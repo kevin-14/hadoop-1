@@ -109,6 +109,9 @@ public class Component implements EventHandler<ComponentEvent> {
   // disk_failed containers etc. This will be reset to 0 periodically.
   public AtomicInteger currentContainerFailure = new AtomicInteger(0);
 
+  private AtomicInteger suceededInstances = new AtomicInteger(0);
+  private AtomicInteger failedInstances = new AtomicInteger(0);
+
   private StateMachine<ComponentState, ComponentEventType, ComponentEvent>
       stateMachine;
   private AsyncDispatcher dispatcher;
@@ -768,5 +771,13 @@ public class Component implements EventHandler<ComponentEvent> {
   // Only for testing
   public List<ComponentInstance> getPendingInstances() {
     return pendingInstances;
+  }
+
+  public AtomicInteger getSuceededInstances() {
+    return suceededInstances;
+  }
+
+  public AtomicInteger getFailedInstances() {
+    return failedInstances;
   }
 }

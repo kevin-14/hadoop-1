@@ -158,6 +158,9 @@ public class ServiceScheduler extends CompositeService {
 
   private boolean gracefulStop = false;
 
+  private volatile FinalApplicationStatus finalApplicationStatus =
+      FinalApplicationStatus.ENDED;
+
   public ServiceScheduler(ServiceContext context) {
     super(context.service.getName());
     this.context = context;
@@ -256,8 +259,9 @@ public class ServiceScheduler extends CompositeService {
         .createAMRMClientAsync(1000, new AMRMClientCallback());
   }
 
-  protected void setGracefulStop() {
+  public void setGracefulStop(FinalApplicationStatus finalApplicationStatus) {
     this.gracefulStop = true;
+    this.finalApplicationStatus = finalApplicationStatus;
     nmClient.getClient().cleanupRunningContainersOnStop(true);
   }
 
