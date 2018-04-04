@@ -47,6 +47,13 @@ yarn yalp job run --docker_image wtan/tf-1.7.0-cuda9:0.0.1 --name wangda-tf-job-
 
 Tensorflow 1.7.0
 ```
+Environments
+  export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64/jre/
+  export HADOOP_HDFS_HOME=/hadoop-3.1.0
+  export HADOOP_CONF_DIR=/hadoop-3.1.0/etc/hadoop
+```
+
+```
 yarn yalp job run --docker_image wtan/tf-1.7.0-cuda9-ubuntu:0.0.1 --name wangda-tf-job-16 --num_workers 1 --output /tmp/cifar10 --tensorboard true --worker_resources memory=20480,vcores=32,yarn.io/gpu=2 --worker_launch_cmd "cd /test/models/tutorials/image/cifar10_estimator/ && python cifar10_main.py --data-dir=/tmp/cifar-10-data --job-dir=/tmp/cifar10 --num-gpus=2 --train-steps=1000" --env LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/nvidia/lib64/
 ```
 --

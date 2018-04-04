@@ -14,8 +14,14 @@
 
 package org.apache.hadoop.yarn.applications.yalp.client.common;
 
-public class Constants {
-  public static final String WORKER_COMPONENT_NAME = "worker";
-  public static final String PS_COMPONENT_NAME = "ps";
+public class Envs {
+  public static final String YALP_TASK_TYPE_ENV = "YALP_TASK_TYPE";
+  public static final String YALP_TASK_INDEX_ENV = "YALP_TASK_INDEX";
 
+  /*
+   * HDFS-related configs
+   */
+  public static final String HADOOP_HDFS_HOME = "HADOOP_HDFS_HOME";
+  public static final String JAVA_HOME = "JAVA_HOME";
+  public static final String HADOOP_CONF_DIR = "HADOOP_CONF_DIR";
 }

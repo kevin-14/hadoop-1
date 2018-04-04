@@ -19,6 +19,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.yarn.applications.yalp.client.common.ClientContext;
 import org.apache.hadoop.yarn.applications.yalp.client.common.Constants;
+import org.apache.hadoop.yarn.applications.yalp.client.common.Envs;
 import org.apache.hadoop.yarn.applications.yalp.client.common.RunJobParameters;
 import org.apache.hadoop.yarn.applications.yalp.client.common.TaskType;
 import org.apache.hadoop.yarn.exceptions.YarnException;
@@ -75,12 +76,33 @@ public class JobSubmitter {
 
   private void addHdfsClassPathIfNeeded(RunJobParameters parameters,
       FileWriter fw) throws IOException {
+    // Find envs to use HDFS
+    String hdfsHome = null;
+    String hadoopConfDir = null;
+    String javaHome = null;
+
+    for (String envar : parameters.getEnvars()) {
+      if (envar.startsWith(Envs.HADOOP_HDFS_HOME + "=")) {
+        hdfsHome = envar;
+      } else if (envar.startsWith(Envs.HADOOP_CONF_DIR + "=")) {
+        hadoopConfDir = envar;
+      } else if (envar.startsWith(Envs.JAVA_HOME + "=")) {
+        javaHome = envar;
+      }
+    }
+
     if ((parameters.getInput() != null && parameters.getInput().contains(
         "hdfs://")) || (parameters.getOutput() != null && parameters.getOutput()
         .contains("hdfs://"))) {
       // HDFS is asked either in input or output, set LD_LIBRARY_PATH
       // and classpath
-      fw.append("export LD_LIBRARY_PATH=`hadoop jnipath`\n");
+
+      fw.append("export " + hdfsHome);
+      fw.append("export " + hadoopConfDir);
+      fw.append("export PATH=$PATH:$" + Envs.HADOOP_HDFS_HOME + "/bin/");
+      fw.append("export " + javaHome);
+      fw.append("export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:"
+          + "$JAVA_HOME/jre/lib/amd64/server");
       fw.append("export CLASSPATH=`hadoop classpath --glob`\n");
     }
   }
@@ -160,8 +182,8 @@ public class JobSubmitter {
 
   private void addCommonEnvironments(Component component, TaskType taskType) {
     Map<String, String> envs = component.getConfiguration().getEnv();
-    envs.put(Constants.YALP_TASK_INDEX_ENV, ServiceApiConstants.COMPONENT_ID);
-    envs.put(Constants.YALP_TASK_TYPE_ENV, taskType.name());
+    envs.put(Envs.YALP_TASK_INDEX_ENV, ServiceApiConstants.COMPONENT_ID);
+    envs.put(Envs.YALP_TASK_TYPE_ENV, taskType.name());
   }
 
   private Service createServiceByParameters(RunJobParameters parameters)
