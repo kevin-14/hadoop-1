@@ -56,7 +56,7 @@ RUN apt-get update && apt-get install git -y
 
 RUN mkdir /test
 RUN cd /test && git clone https://github.com/dsindex/tensorflow
-RUN cd /test && git clone https://github.com/tensorflow/models/
+RUN cd /test && git clone -b master-1.7.0 https://github.com/leftnoteasy/models/
 
 # Install Hadoop (TODO, should use Apache version)
 #RUN curl http://s3.amazonaws.com/dev.hortonworks.com/HDP/centos7/3.x/BUILDS/3.0.0.0-1089/hdpbn.repo > /etc/yum.repos.d/hdp.repo
@@ -68,6 +68,6 @@ RUN cd /test && git clone https://github.com/tensorflow/models/
 
 RUN chown -R nobody /test
 
-#COPY cifar-10-data/ /tmp/cifar-10-data
+COPY cifar-10-data/ /tmp/cifar-10-data
 
 # --- ~ DO NOT EDIT OR DELETE BETWEEN THE LINES --- #
