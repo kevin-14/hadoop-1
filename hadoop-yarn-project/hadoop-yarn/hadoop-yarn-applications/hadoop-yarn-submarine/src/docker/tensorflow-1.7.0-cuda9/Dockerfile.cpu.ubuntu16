@@ -1,0 +1,60 @@
+FROM ubuntu:16.04
+
+# Pick up some TF dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential \
+        curl \
+        libfreetype6-dev \
+        libpng12-dev \
+        libzmq3-dev \
+        pkg-config \
+        python \
+        python-dev \
+        rsync \
+        software-properties-common \
+        unzip \
+        && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN curl -O https://bootstrap.pypa.io/get-pip.py && \
+    python get-pip.py && \
+    rm get-pip.py
+
+RUN pip --no-cache-dir install \
+        Pillow \
+        h5py \
+        ipykernel \
+        jupyter \
+        matplotlib \
+        numpy \
+        pandas \
+        scipy \
+        sklearn \
+        && \
+    python -m ipykernel.kernelspec
+
+# --- DO NOT EDIT OR DELETE BETWEEN THE LINES --- #
+# These lines will be edited automatically by parameterized_docker_build.sh. #
+# COPY _PIP_FILE_ /
+# RUN pip --no-cache-dir install /_PIP_FILE_
+# RUN rm -f /_PIP_FILE_
+
+# Install TensorFlow GPU version.
+RUN pip install --upgrade tensorflow
+
+RUN apt-get update && apt-get install git -y
+
+COPY cifar-10-data/ /tmp/cifar-10-data
+
+RUN apt-get update && apt-get install -y openjdk-8-jdk wget
+RUN wget http://people.apache.org/~wangda/hadoop-3.1.0-RC1/hadoop-3.1.0.tar.gz
+RUN tar zxf hadoop-3.1.0.tar.gz
+
+RUN mkdir /test
+RUN cd /test && git clone https://github.com/dsindex/tensorflow
+RUN cd /test && git clone -b master-1.7.0 https://github.com/leftnoteasy/models/
+RUN chown -R nobody /test
+
+# COPY hadoop-conf/core-site.xml /hadoop-3.1.0/etc/hadoop/core-site.xml
+# --- ~ DO NOT EDIT OR DELETE BETWEEN THE LINES --- #

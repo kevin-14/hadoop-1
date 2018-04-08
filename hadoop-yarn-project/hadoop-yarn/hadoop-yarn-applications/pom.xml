@@ -38,7 +38,7 @@
     <module>hadoop-yarn-applications-unmanaged-am-launcher</module>
     <module>hadoop-yarn-services</module>
     <module>hadoop-yarn-services-api</module>
-    <module>hadoop-yarn-applications-yalp</module>
+    <module>hadoop-yarn-submarine</module>
   </modules>
 
  <profiles>
