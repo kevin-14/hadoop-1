@@ -82,11 +82,15 @@ public class JobSubmitter {
     String hadoopConfDir = null;
     String javaHome = null;
 
+    boolean hadoopEnv = false;
+
     for (String envar : parameters.getEnvars()) {
       if (envar.startsWith(Envs.HADOOP_HDFS_HOME + "=")) {
         hdfsHome = envar;
+        hadoopEnv = true;
       } else if (envar.startsWith(Envs.HADOOP_CONF_DIR + "=")) {
         hadoopConfDir = envar;
+        hadoopEnv = true;
       } else if (envar.startsWith(Envs.JAVA_HOME + "=")) {
         javaHome = envar;
       }
@@ -94,18 +98,30 @@ public class JobSubmitter {
 
     if ((parameters.getInput() != null && parameters.getInput().contains(
         "hdfs://")) || (parameters.getJobDir() != null && parameters.getJobDir()
-        .contains("hdfs://"))) {
+        .contains("hdfs://")) || hadoopEnv) {
       // HDFS is asked either in input or output, set LD_LIBRARY_PATH
       // and classpath
 
-      fw.append("export " + hdfsHome);
-      fw.append("export " + hadoopConfDir);
-      fw.append("export PATH=$PATH:$" + Envs.HADOOP_HDFS_HOME + "/bin/");
-      fw.append("export " + javaHome);
-      fw.append("export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:"
-          + "$JAVA_HOME/jre/lib/amd64/server");
+      if (hdfsHome != null) {
+        fw.append("export " + hdfsHome + "\n");
+        fw.append("export PATH=$PATH:$" + Envs.HADOOP_HDFS_HOME + "/bin/\n");
+      }
+      if (hadoopConfDir != null) {
+        fw.append("export " + hadoopConfDir + "\n");
+      }
+      if (javaHome != null) {
+        fw.append("export " + javaHome + "\n");
+        fw.append("export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:"
+            + "$JAVA_HOME/lib/amd64/server\n");
+      }
       fw.append("export CLASSPATH=`hadoop classpath --glob`\n");
     }
+
+    // DEBUG
+    fw.append("echo $CLASSPATH\n");
+    fw.append("echo $JAVA_HOME\n");
+    fw.append("echo $LD_LIBRARY_PATH\n");
+    fw.append("echo $HADOOP_HDFS_HOME\n");
   }
 
   /*
@@ -133,7 +149,7 @@ public class JobSubmitter {
         // Run tensorboard at the background
         fw.append(
             "tensorboard --port " + tensorboardPort + " --logdir " + parameters
-                .getJobDir() + "&\n");
+                .getJobDir() + " &\n");
       }
     }
 

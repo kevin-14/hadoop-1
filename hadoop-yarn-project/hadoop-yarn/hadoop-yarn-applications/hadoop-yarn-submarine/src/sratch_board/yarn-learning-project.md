@@ -56,6 +56,13 @@ Environments
 ```
 yarn yalp job run --docker_image wtan/tf-1.7.0-cuda9-ubuntu:0.0.1 --name wangda-tf-job-16 --num_workers 1 --output /tmp/cifar10 --tensorboard true --worker_resources memory=20480,vcores=32,yarn.io/gpu=2 --worker_launch_cmd "cd /test/models/tutorials/image/cifar10_estimator/ && python cifar10_main.py --data-dir=/tmp/cifar-10-data --job-dir=/tmp/cifar10 --num-gpus=2 --train-steps=1000" --env LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/nvidia/lib64/
 ```
+
+```
+Census: 
+cd /test/models/yarn/census_train_and_eval && python trainer/task.py --train-files census_data/adult.data.csv --eval-files census_data/adult.test.csv --train-steps 100 --job-dir hdfs://default/tmp/job
+
+yarn submarine job run --name wangda-tf-job-16 --docker_image wtan/tf-1.7.0-cuda9-ubuntu-cpu:0.0.1 --num_workers 1 --tensorboard true --worker_resources memory=20480,vcores=32,yarn.io/gpu=2 --job_dir hdfs://default/tmp/job16 --worker_launch_cmd "cd /test/models/yarn/census_train_and_eval && python trainer/task.py --train-files census_data/adult.data.csv --eval-files census_data/adult.test.csv --train-steps 100 --job-dir %job_dir%" --env LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/nvidia/lib64/ --env JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64/jre/ --env HADOOP_HDFS_HOME=/hadoop-3.1.0 --env HADOOP_CONF_DIR=/hadoop-3.1.0/etc/hadoop/ --env HADOOP_HOME= --env HADOOP_YARN_HOME=
+```
 --
 
 *Dockerfile*
