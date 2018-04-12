@@ -12,7 +12,7 @@
  * limitations under the License. See accompanying LICENSE file.
  */
 
-package org.apache.hadoop.yarn.submarine.client;
+package org.apache.hadoop.yarn.submarine.client.job;
 
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -145,7 +145,7 @@ public class JobSubmitter {
       // Do we need tensorboard?
       if (parameters.isTensorboardEnabled()) {
         int tensorboardPort = clientContext.getTaskNetworkPortManager().getPort(
-            parameters.getJobName(), "tensorboard", 0);
+            parameters.getName(), "tensorboard", 0);
         // Run tensorboard at the background
         fw.append(
             "tensorboard --port " + tensorboardPort + " --logdir " + parameters
@@ -196,7 +196,7 @@ public class JobSubmitter {
     // Get staging area directory
     Path stagingDir =
         clientContext.getRemoteDirectoryManager().getAndCreateJobStagingArea(
-            parameters.getJobName());
+            parameters.getName());
 
     // Generate script file in the local disk
     String localScriptFile = generateCommandLaunchScript(parameters, taskType);
@@ -258,7 +258,7 @@ public class JobSubmitter {
   private Service createServiceByParameters(JobRunParameters parameters)
       throws IOException {
     Service service = new Service();
-    service.setName(parameters.getJobName());
+    service.setName(parameters.getName());
     service.setVersion(String.valueOf(System.currentTimeMillis()));
     service.setArtifact(new Artifact().type(Artifact.TypeEnum.DOCKER)
         .id(parameters.getDockerImageName()));

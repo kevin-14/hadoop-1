@@ -17,12 +17,9 @@ package org.apache.hadoop.yarn.submarine.client.cli;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.GnuParser;
-import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.apache.hadoop.yarn.api.records.Resource;
-import org.apache.hadoop.yarn.submarine.client.JobSubmitter;
-import org.apache.hadoop.yarn.submarine.client.common.CliUtils;
+import org.apache.hadoop.yarn.submarine.client.job.JobSubmitter;
 import org.apache.hadoop.yarn.submarine.client.common.ClientContext;
 import org.apache.hadoop.yarn.submarine.client.common.param.JobRunParameters;
 import org.apache.hadoop.yarn.exceptions.YarnException;
@@ -31,8 +28,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.apache.hadoop.yarn.service.utils.ServiceApiUtil.jsonSerDeser;
 
@@ -108,7 +103,7 @@ public class RunJobCli extends AbstractCli{
       throws ParseException, IOException, YarnException, InterruptedException {
     parseCommandLineAndGetRunJobParameters(args);
 
-    clientContext.addRunJobParameters(parameters.getJobName(), parameters);
+    clientContext.addRunJobParameters(parameters.getName(), parameters);
 
     JobSubmitter jobSubmitter = new JobSubmitter(clientContext);
     serviceSpec = jobSubmitter.runJob(parameters);
@@ -119,7 +114,7 @@ public class RunJobCli extends AbstractCli{
     }
 
     clientContext.getJobMonitor().waitTrainingJobReadyOrFinal(
-        parameters.getJobName(), clientContext);
+        parameters.getName(), clientContext);
   }
 
   @VisibleForTesting

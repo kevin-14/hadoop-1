@@ -19,7 +19,7 @@ import org.apache.hadoop.yarn.submarine.client.common.fs.RemoteDirectoryManager;
 import org.apache.hadoop.yarn.submarine.client.common.network.RandomTaskNetworkPortManagerImpl;
 import org.apache.hadoop.yarn.submarine.client.common.network.TaskNetworkPortManager;
 import org.apache.hadoop.yarn.submarine.client.common.param.JobRunParameters;
-import org.apache.hadoop.yarn.submarine.client.monitor.JobMonitor;
+import org.apache.hadoop.yarn.submarine.client.job.JobMonitor;
 import org.apache.hadoop.yarn.client.api.YarnClient;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.service.client.ServiceClient;

@@ -42,7 +42,7 @@ public class CliUtils {
     String jobDir = jobRunParameters.getJobDir();
     if (null == jobDir) {
       jobDir = directoryManager.getAndCreateJobDir(
-          jobRunParameters.getJobName()).toString();
+          jobRunParameters.getName()).toString();
     }
 
     String input = jobRunParameters.getInput();

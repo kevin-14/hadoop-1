@@ -26,7 +26,7 @@ public class CliConstants {
   public static final String JOB_DIR = "job_dir";
   public static final String SAVEDMODEL_PATH = "savedmodel_path";
   public static final String N_WORKERS = "num_workers";
-  public static final String N_REPLICAS = "num_replicas";
+  public static final String N_SERVING_TASKS = "num_serving_tasks";
   public static final String N_PS = "num_ps";
   public static final String WORKER_RES = "worker_resources";
   public static final String SERVING_RES = "serving_resources";

@@ -45,14 +45,14 @@ public abstract class BaseParameters {
       verbose = true;
     }
     clientContext.setVerbose(verbose);
-    this.setJobName(name);
+    this.setName(name);
   }
 
-  public String getJobName() {
+  public String getName() {
     return name;
   }
 
-  public BaseParameters setJobName(String name) {
+  public BaseParameters setName(String name) {
     this.name = name;
     return this;
   }
