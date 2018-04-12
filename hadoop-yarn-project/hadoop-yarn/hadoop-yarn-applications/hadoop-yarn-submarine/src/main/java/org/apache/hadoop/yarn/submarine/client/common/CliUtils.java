@@ -14,11 +14,21 @@
 
 package org.apache.hadoop.yarn.submarine.client.common;
 
+import org.apache.hadoop.yarn.api.records.Resource;
+import org.apache.hadoop.yarn.api.records.ResourceInformation;
+import org.apache.hadoop.yarn.api.records.ResourceTypeInfo;
+import org.apache.hadoop.yarn.client.api.YarnClient;
+import org.apache.hadoop.yarn.exceptions.ResourceNotFoundException;
+import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.apache.hadoop.yarn.submarine.client.cli.CliConstants;
 import org.apache.hadoop.yarn.submarine.client.common.fs.RemoteDirectoryManager;
+import org.apache.hadoop.yarn.submarine.client.common.param.JobRunParameters;
+import org.apache.hadoop.yarn.util.UnitsConversionUtil;
+import org.apache.hadoop.yarn.util.resource.ResourceUtils;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class CliUtils {
@@ -27,16 +37,16 @@ public class CliUtils {
    * @return launch command after pattern replace
    */
   public static String replacePatternsInLaunchCommand(String specifiedCli,
-      RunJobParameters runJobParameters,
+      JobRunParameters jobRunParameters,
       RemoteDirectoryManager directoryManager) throws IOException {
-    String jobDir = runJobParameters.getJobDir();
+    String jobDir = jobRunParameters.getJobDir();
     if (null == jobDir) {
       jobDir = directoryManager.getAndCreateJobDir(
-          runJobParameters.getJobName()).toString();
+          jobRunParameters.getJobName()).toString();
     }
 
-    String input = runJobParameters.getInput();
-    String savedModelDir = runJobParameters.getSavedModelPath();
+    String input = jobRunParameters.getInput();
+    String savedModelDir = jobRunParameters.getSavedModelPath();
     if (null == savedModelDir) {
       savedModelDir = jobDir;
     }
@@ -59,5 +69,64 @@ public class CliUtils {
     }
 
     return newCli;
+  }
+
+  // TODO, this duplicated to Client of distributed shell, should cleanup
+  private static Map<String, Long> parseResourcesString(String resourcesStr) {
+    Map<String, Long> resources = new HashMap<>();
+
+    // Ignore the grouping "[]"
+    if (resourcesStr.startsWith("[")) {
+      resourcesStr = resourcesStr.substring(1);
+    }
+    if (resourcesStr.endsWith("]")) {
+      resourcesStr = resourcesStr.substring(0, resourcesStr.length());
+    }
+
+    for (String resource : resourcesStr.trim().split(",")) {
+      resource = resource.trim();
+      if (!resource.matches("^[^=]+=\\d+\\s?\\w*$")) {
+        throw new IllegalArgumentException("\"" + resource + "\" is not a " +
+            "valid resource type/amount pair. " +
+            "Please provide key=amount pairs separated by commas.");
+      }
+      String[] splits = resource.split("=");
+      String key = splits[0], value = splits[1];
+      String units = ResourceUtils.getUnits(value);
+      String valueWithoutUnit = value.substring(
+          0, value.length() - units.length()).trim();
+      Long resourceValue = Long.valueOf(valueWithoutUnit);
+      if (!units.isEmpty()) {
+        resourceValue = UnitsConversionUtil.convert(units, "Mi", resourceValue);
+      }
+      if (key.equals("memory")) {
+        key = ResourceInformation.MEMORY_URI;
+      }
+      resources.put(key, resourceValue);
+    }
+    return resources;
+  }
+
+  private static void validateResourceTypes(Iterable<String> resourceNames,
+      YarnClient yarnClient) throws IOException, YarnException {
+    List<ResourceTypeInfo> resourceTypes = yarnClient.getResourceTypeInfo();
+    for (String resourceName : resourceNames) {
+      if (!resourceTypes.stream().anyMatch(
+          e -> e.getName().equals(resourceName))) {
+        throw new ResourceNotFoundException(
+            "Unknown resource: " + resourceName);
+      }
+    }
+  }
+
+  public static Resource createResourceFromString(String resourceStr,
+      YarnClient yarnClient) throws IOException, YarnException {
+    Map<String, Long> typeToValue = parseResourcesString(resourceStr);
+    validateResourceTypes(typeToValue.keySet(), yarnClient);
+    Resource resource = Resource.newInstance(0, 0);
+    for (Map.Entry<String, Long> entry : typeToValue.entrySet()) {
+      resource.setResourceValue(entry.getKey(), entry.getValue());
+    }
+    return resource;
   }
 }

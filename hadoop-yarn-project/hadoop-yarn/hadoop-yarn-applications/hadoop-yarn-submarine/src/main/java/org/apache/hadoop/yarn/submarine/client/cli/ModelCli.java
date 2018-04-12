@@ -14,15 +14,68 @@
 
 package org.apache.hadoop.yarn.submarine.client.cli;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.GnuParser;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.apache.hadoop.yarn.submarine.client.common.ClientContext;
 
+import java.util.Arrays;
+
 public class ModelCli extends AbstractCli {
+  private static Options OPTIONS = generateOptions();
+
   public ModelCli(ClientContext cliContext) {
     super(cliContext);
   }
 
-  @Override
-  public void run(String[] args) {
+  private static Options generateOptions() {
+    Options options = new Options();
+    options.addOption(CliConstants.NAME, true, "Name of the model serving job");
+    options.addOption(CliConstants.INPUT, true,
+        "Input of the job, could be local or other FS directory");
+    options.addOption(CliConstants.SAVEDMODEL_PATH, true,
+        "Model exported path (savedmodel) of the job, which is needed when "
+            + "exported model is not placed under ${job_dir}"
+            + "could be local or other FS directory. This will be used to serve.");
+    options.addOption(CliConstants.N_REPLICAS, true,
+        "Numnber of replicas of the model serving job, by default it's 1");
+    options.addOption(CliConstants.SERVING_RES, true,
+        "Resource of each serving task, for example "
+            + "memory-mb=2048,vcores=2,yarn.io/gpu=2");
+    options.addOption(CliConstants.DOCKER_IMAGE, true, "Docker image name/tag");
+    options.addOption(CliConstants.QUEUE, true,
+        "Name of queue to run the job, by default it uses default queue");
+    options.addOption(CliConstants.SERVING_LAUNCH_CMD, true,
+        "Commandline of serving service, arguments will be "
+            + "directly used to launch the worker. If this is not specified,"
+            + " framework will generate command line according to framework");
+    options.addOption(CliConstants.PS_LAUNCH_CMD, true,
+        "Commandline of worker, arguments will be "
+            + "directly used to launch the PS");
+    options.addOption(CliConstants.ENV, true,
+        "Other environment variables");
+    options.addOption(CliConstants.VERBOSE, false,
+        "Print verbose log for troubleshooting");
+    options.addOption(CliConstants.SERVING_FRAMEWORK, true,
+        "Which framework is used to do serving, if not specified, use "
+            + "simple_tensorflow_serving");
+    return options;
+  }
 
+  @Override
+  public void run(String[] args) throws ParseException {
+    String action = args[0];
+
+    if (action.equals(CliConstants.SERVE)) {
+      String[] toParseArgs = Arrays.copyOfRange(args, 2, args.length);
+
+      // Do parsing
+      GnuParser parser = new GnuParser();
+      CommandLine cli = parser.parse(OPTIONS, toParseArgs);
+
+    } else {
+      throw new IllegalArgumentException("Wrong action for model command");
+    }
   }
 }

@@ -21,24 +21,18 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.hadoop.yarn.api.records.Resource;
-import org.apache.hadoop.yarn.api.records.ResourceInformation;
-import org.apache.hadoop.yarn.api.records.ResourceTypeInfo;
 import org.apache.hadoop.yarn.submarine.client.JobSubmitter;
+import org.apache.hadoop.yarn.submarine.client.common.CliUtils;
 import org.apache.hadoop.yarn.submarine.client.common.ClientContext;
-import org.apache.hadoop.yarn.submarine.client.common.RunJobParameters;
-import org.apache.hadoop.yarn.exceptions.ResourceNotFoundException;
+import org.apache.hadoop.yarn.submarine.client.common.param.JobRunParameters;
 import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.apache.hadoop.yarn.service.api.records.Service;
-import org.apache.hadoop.yarn.util.UnitsConversionUtil;
-import org.apache.hadoop.yarn.util.resource.ResourceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static org.apache.hadoop.yarn.service.utils.ServiceApiUtil.jsonSerDeser;
 
@@ -49,11 +43,15 @@ public class RunJobCli extends AbstractCli{
   private Options options;
   private Service serviceSpec;
 
-  private RunJobParameters parameters;
+  private JobRunParameters parameters = new JobRunParameters();
 
   public RunJobCli(ClientContext cliContext) {
     super(cliContext);
     options = generateOptions();
+  }
+
+  public void printUsages() {
+    parameters.printUsages(options);
   }
 
   private Options generateOptions() {
@@ -97,158 +95,18 @@ public class RunJobCli extends AbstractCli{
     return options;
   }
 
-  @VisibleForTesting
-  public void printUsages() {
-    new HelpFormatter().printHelp("run", options);
-  }
-
-  private void validateResourceTypes(Iterable<String> resourceNames)
-      throws IOException, YarnException {
-    List<ResourceTypeInfo> resourceTypes =
-        clientContext.getOrCreateYarnClient().getResourceTypeInfo();
-    for (String resourceName : resourceNames) {
-      if (!resourceTypes.stream().anyMatch(e ->
-          e.getName().equals(resourceName))) {
-        throw new ResourceNotFoundException("Unknown resource: " +
-            resourceName);
-      }
-    }
-  }
-
-  // TODO, this duplicated to Client of distributed shell, should cleanup
-  private Map<String, Long> parseResourcesString(String resourcesStr) {
-    Map<String, Long> resources = new HashMap<>();
-
-    // Ignore the grouping "[]"
-    if (resourcesStr.startsWith("[")) {
-      resourcesStr = resourcesStr.substring(1);
-    }
-    if (resourcesStr.endsWith("]")) {
-      resourcesStr = resourcesStr.substring(0, resourcesStr.length());
-    }
-
-    for (String resource : resourcesStr.trim().split(",")) {
-      resource = resource.trim();
-      if (!resource.matches("^[^=]+=\\d+\\s?\\w*$")) {
-        throw new IllegalArgumentException("\"" + resource + "\" is not a " +
-            "valid resource type/amount pair. " +
-            "Please provide key=amount pairs separated by commas.");
-      }
-      String[] splits = resource.split("=");
-      String key = splits[0], value = splits[1];
-      String units = ResourceUtils.getUnits(value);
-      String valueWithoutUnit = value.substring(
-          0, value.length() - units.length()).trim();
-      Long resourceValue = Long.valueOf(valueWithoutUnit);
-      if (!units.isEmpty()) {
-        resourceValue = UnitsConversionUtil.convert(units, "Mi", resourceValue);
-      }
-      if (key.equals("memory")) {
-        key = ResourceInformation.MEMORY_URI;
-      }
-      resources.put(key, resourceValue);
-    }
-    return resources;
-  }
-
-  public Resource createResourceFromString(String resourceStr)
-      throws IOException, YarnException {
-    Map<String, Long> typeToValue = parseResourcesString(resourceStr);
-    validateResourceTypes(typeToValue.keySet());
-    Resource resource = Resource.newInstance(0, 0);
-    for (Map.Entry<String, Long> entry : typeToValue.entrySet()) {
-      resource.setResourceValue(entry.getKey(), entry.getValue());
-    }
-    return resource;
-  }
-
-  private RunJobParameters parseCommandLineAndGetRunJobParameters(String[] args)
+  private void parseCommandLineAndGetRunJobParameters(String[] args)
       throws ParseException, IOException, YarnException {
     // Do parsing
     GnuParser parser = new GnuParser();
     CommandLine cli = parser.parse(options, args);
-
-    String name = cli.getOptionValue(CliConstants.NAME);
-    if (name == null) {
-      printUsages();
-      throw new ParseException("--name is absent");
-    }
-
-    String input = cli.getOptionValue(CliConstants.INPUT);
-    String jobDir = cli.getOptionValue(CliConstants.JOB_DIR);
-    String savedModelPath = cli.getOptionValue(CliConstants.SAVEDMODEL_PATH);
-    int nWorkers = 1;
-    if (cli.getOptionValue(CliConstants.N_WORKERS) != null) {
-      nWorkers = Integer.parseInt(cli.getOptionValue(CliConstants.N_WORKERS));
-    }
-
-    int nPS = 0;
-    if (cli.getOptionValue(CliConstants.N_PS) != null) {
-      nPS = Integer.parseInt(cli.getOptionValue(CliConstants.N_PS));
-    }
-
-    String workerResourceStr = cli.getOptionValue(CliConstants.WORKER_RES);
-    if (workerResourceStr == null) {
-      printUsages();
-      throw new ParseException("--" + CliConstants.WORKER_RES + " is absent.");
-    }
-    Resource workerResource = createResourceFromString(workerResourceStr);
-
-    Resource psResource = null;
-    if (nPS > 0) {
-      String psResourceStr = cli.getOptionValue(CliConstants.PS_RES);
-      if (psResourceStr == null) {
-        printUsages();
-        throw new ParseException("--" + CliConstants.PS_RES + " is absent.");
-      }
-      psResource = createResourceFromString(psResourceStr);
-    }
-
-    String dockerImage = cli.getOptionValue(CliConstants.DOCKER_IMAGE);
-    if (dockerImage == null) {
-      printUsages();
-      throw new ParseException("--" + CliConstants.DOCKER_IMAGE + " is absent.");
-    }
-
-    boolean tensorboard = true;
-    if (cli.getOptionValue(CliConstants.TENSORBOARD) != null) {
-      tensorboard = Boolean.parseBoolean(
-          cli.getOptionValue(CliConstants.TENSORBOARD));
-    }
-
-    String workerLaunchCmd = cli.getOptionValue(CliConstants.WORKER_LAUNCH_CMD);
-    String psLaunchCommand = cli.getOptionValue(CliConstants.PS_LAUNCH_CMD);
-
-    // Envars
-    List<String> envarsList = new ArrayList<>();
-    String[] envars = cli.getOptionValues(CliConstants.ENV);
-    if (envars != null) {
-      for (String envar : envars) {
-        envarsList.add(envar);
-      }
-    }
-
-    boolean verbose = false;
-    if (cli.hasOption(CliConstants.VERBOSE)) {
-      verbose = true;
-    }
-    clientContext.setVerbose(verbose);
-
-    RunJobParameters param = new RunJobParameters();
-    param.setInput(input).setJobName(name).setNumPS(nPS).setNumWorkers(nWorkers)
-        .setJobDir(jobDir).setSavedModelPath(savedModelPath)
-        .setPsResource(psResource).setWorkerResource(workerResource)
-        .setTensorboardEnabled(tensorboard).setWorkerLaunchCmd(workerLaunchCmd)
-        .setPSLaunchCmd(psLaunchCommand).setDockerImageName(dockerImage)
-        .setEnvars(envarsList);
-
-    return param;
+    parameters.updateParametersByParsedCommandline(cli, options, clientContext);
   }
 
   @Override
   public void run(String[] args)
       throws ParseException, IOException, YarnException, InterruptedException {
-    parameters = parseCommandLineAndGetRunJobParameters(args);
+    parseCommandLineAndGetRunJobParameters(args);
 
     clientContext.addRunJobParameters(parameters.getJobName(), parameters);
 
@@ -270,7 +128,7 @@ public class RunJobCli extends AbstractCli{
   }
 
   @VisibleForTesting
-  public RunJobParameters getRunJobParameters() {
+  public JobRunParameters getRunJobParameters() {
     return parameters;
   }
 }

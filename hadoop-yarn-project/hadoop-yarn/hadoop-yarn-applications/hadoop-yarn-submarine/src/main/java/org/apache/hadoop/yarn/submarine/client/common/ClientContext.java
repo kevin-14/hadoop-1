@@ -18,6 +18,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.yarn.submarine.client.common.fs.RemoteDirectoryManager;
 import org.apache.hadoop.yarn.submarine.client.common.network.RandomTaskNetworkPortManagerImpl;
 import org.apache.hadoop.yarn.submarine.client.common.network.TaskNetworkPortManager;
+import org.apache.hadoop.yarn.submarine.client.common.param.JobRunParameters;
 import org.apache.hadoop.yarn.submarine.client.monitor.JobMonitor;
 import org.apache.hadoop.yarn.client.api.YarnClient;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
@@ -33,7 +34,7 @@ public class ClientContext {
   private TaskNetworkPortManager taskNetworkPortManager;
   private YarnClient yarnClient;
   private ServiceClient serviceClient;
-  private Map<String, RunJobParameters> cachedRunJobParameters =
+  private Map<String, JobRunParameters> cachedRunJobParameters =
       new ConcurrentHashMap<>();
   private JobMonitor jobMonitor;
   private boolean verbose;
@@ -83,11 +84,11 @@ public class ClientContext {
     return serviceClient;
   }
 
-  public RunJobParameters getRunJobParameters(String jobName) {
+  public JobRunParameters getRunJobParameters(String jobName) {
     return cachedRunJobParameters.get(jobName);
   }
 
-  public void addRunJobParameters(String jobName, RunJobParameters parameters) {
+  public void addRunJobParameters(String jobName, JobRunParameters parameters) {
     cachedRunJobParameters.put(jobName, parameters);
   }
 

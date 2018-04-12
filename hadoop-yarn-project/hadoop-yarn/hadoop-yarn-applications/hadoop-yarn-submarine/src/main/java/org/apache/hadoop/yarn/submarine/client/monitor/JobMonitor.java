@@ -1,7 +1,7 @@
 package org.apache.hadoop.yarn.submarine.client.monitor;
 
 import org.apache.hadoop.yarn.submarine.client.common.ClientContext;
-import org.apache.hadoop.yarn.submarine.client.common.RunJobParameters;
+import org.apache.hadoop.yarn.submarine.client.common.param.JobRunParameters;
 import org.apache.hadoop.yarn.submarine.client.common.TrainingJobStatus;
 import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.apache.hadoop.yarn.service.api.records.Service;
@@ -37,7 +37,7 @@ public class JobMonitor {
   public void waitTrainingJobReadyOrFinal(String jobName,
       ClientContext clientContext)
       throws IOException, YarnException, InterruptedException {
-    RunJobParameters parameters = clientContext.getRunJobParameters(jobName);
+    JobRunParameters parameters = clientContext.getRunJobParameters(jobName);
 
     // Wait 15 sec between each fetch.
     int waitSec = 15;

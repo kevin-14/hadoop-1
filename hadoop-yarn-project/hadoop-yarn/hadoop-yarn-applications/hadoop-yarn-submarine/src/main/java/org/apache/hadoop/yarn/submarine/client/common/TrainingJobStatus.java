@@ -5,6 +5,7 @@ import org.apache.hadoop.yarn.service.api.records.Container;
 import org.apache.hadoop.yarn.service.api.records.ContainerState;
 import org.apache.hadoop.yarn.service.api.records.Service;
 import org.apache.hadoop.yarn.service.api.records.ServiceState;
+import org.apache.hadoop.yarn.submarine.client.common.param.JobRunParameters;
 
 import java.io.PrintStream;
 import java.time.Instant;
@@ -59,9 +60,9 @@ public class TrainingJobStatus {
   }
 
   private void fetchTensorboardLink(ClientContext clientContext) {
-    RunJobParameters runJobParameters = clientContext.getRunJobParameters(
+    JobRunParameters jobRunParameters = clientContext.getRunJobParameters(
         serviceSpec.getName());
-    if (runJobParameters == null || !runJobParameters.isTensorboardEnabled()) {
+    if (jobRunParameters == null || !jobRunParameters.isTensorboardEnabled()) {
       return;
     }
 
