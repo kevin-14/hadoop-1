@@ -23,26 +23,25 @@ import java.lang.reflect.InvocationTargetException;
 public class ModelManagerFactory {
   public static ModelManager getModelManager(String servingFramework,
       ClientContext clientContext) throws YarnException {
+    ModelManager mmgr;
+
     if (null != servingFramework && (!servingFramework.equals(
         "simple_serving_framework"))) {
       try {
         Class cl = Class.forName("servingFramework");
         Constructor con = cl.getConstructor();
         Object obj = con.newInstance();
-        return (ModelManager) obj;
-      } catch (NoSuchMethodException e) {
+        mmgr = (ModelManager) obj;
+      } catch (NoSuchMethodException | IllegalAccessException |
+          InstantiationException | InvocationTargetException |
+          ClassNotFoundException e) {
         throw new YarnException(e);
-      } catch (IllegalAccessException e) {
-        e.printStackTrace();
-      } catch (InstantiationException e) {
-        e.printStackTrace();
-      } catch (InvocationTargetException e) {
-        e.printStackTrace();
-      } catch (ClassNotFoundException e) {
-        e.printStackTrace();
       }
     } else {
-      return new STSModelManager();
+      mmgr = new STSModelManager();
     }
+
+    mmgr.initialize(clientContext);
+    return mmgr;
   }
 }

@@ -21,6 +21,8 @@ import org.apache.commons.cli.ParseException;
 import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.apache.hadoop.yarn.submarine.client.common.ClientContext;
 import org.apache.hadoop.yarn.submarine.client.common.param.ModelServeParameters;
+import org.apache.hadoop.yarn.submarine.client.model.ModelManager;
+import org.apache.hadoop.yarn.submarine.client.model.ModelManagerFactory;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -78,7 +80,10 @@ public class ModelCli extends AbstractCli {
       modelServeParameters.updateParametersByParsedCommandline(cli, OPTIONS,
           clientContext);
 
-    } else {
+      ModelManager mmgr = ModelManagerFactory.getModelManager(
+          modelServeParameters.getServingFramework(), clientContext);
+      mmgr.serveModel(modelServeParameters);
+    } else{
       throw new IllegalArgumentException("Wrong action for model command");
     }
   }

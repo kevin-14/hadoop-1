@@ -14,9 +14,15 @@
 
 package org.apache.hadoop.yarn.submarine.client.model;
 
+import org.apache.hadoop.yarn.submarine.client.common.param.ModelServeParameters;
+
 /**
  * Model manager by using implementation of
  * https://github.com/tobegit3hub/simple_tensorflow_serving
  */
 public class STSModelManager extends ModelManager {
+  @Override
+  public void serveModel(ModelServeParameters parameters) {
+
+  }
 }

@@ -14,9 +14,21 @@
 
 package org.apache.hadoop.yarn.submarine.client.model;
 
+import org.apache.hadoop.yarn.submarine.client.common.ClientContext;
+import org.apache.hadoop.yarn.submarine.client.common.param.ModelServeParameters;
+
 /**
  * Class to manage models in a cluster, including model serving / delete / list
  * , etc.
  */
 public abstract class ModelManager {
+  protected ClientContext clientContext;
+
+  public void initialize(ClientContext clientContext) {
+    this.clientContext = clientContext;
+  }
+
+  public abstract void serveModel(ModelServeParameters parameters);
+
+  // More actions can add here such as remove / list model.
 }
