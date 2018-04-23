@@ -5,16 +5,25 @@ import org.apache.hadoop.yarn.service.api.records.Container;
 import org.apache.hadoop.yarn.service.api.records.ContainerState;
 import org.apache.hadoop.yarn.service.api.records.Service;
 import org.apache.hadoop.yarn.service.api.records.ServiceState;
+import org.apache.hadoop.yarn.service.utils.JsonSerDeser;
 import org.apache.hadoop.yarn.submarine.client.common.param.JobRunParameters;
+import org.codehaus.jackson.map.PropertyNamingStrategy;
 
+import java.io.IOException;
 import java.io.PrintStream;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.apache.hadoop.yarn.service.utils.ServiceApiUtil.jsonSerDeser;
+import static org.apache.hadoop.yarn.submarine.client.common.Constants.PRIMARY_WORKER_COMPONENT_NAME;
 import static org.apache.hadoop.yarn.submarine.client.common.Constants.WORKER_COMPONENT_NAME;
 
 public class TrainingJobStatus {
+  public static JsonSerDeser<Service> jsonSerDeser =
+      new JsonSerDeser<>(Service.class,
+          PropertyNamingStrategy.CAMEL_CASE_TO_LOWER_CASE_WITH_UNDERSCORES);
+
   public static class ComponentStatus {
     long nReadyContainers = 0;
     long nRunningButUnreadyContainers = 0;
@@ -47,7 +56,7 @@ public class TrainingJobStatus {
     }
 
     if (tensorboardLink.startsWith("http")) {
-      out.println("  Tensorboard link: " + tensorboardLink);
+      out.println("  Tensorboard link: " + " http://172.27.71.0:6006/");
     }
 
     out.println("  Components:");
@@ -57,6 +66,12 @@ public class TrainingJobStatus {
           + " | Asked=" + comp.totalAskedContainers);
     }
     out.println("------------------");
+  }
+
+  public void printFullJson(PrintStream out) throws IOException {
+    if (serviceSpec != null) {
+      out.println(jsonSerDeser.toJson(serviceSpec));
+    }
   }
 
   private void fetchTensorboardLink(ClientContext clientContext) {
@@ -73,9 +88,9 @@ public class TrainingJobStatus {
     }
 
     for (Component component : serviceSpec.getComponents()) {
-      if (component.getName().equals(WORKER_COMPONENT_NAME)) {
+      if (component.getName().equals(PRIMARY_WORKER_COMPONENT_NAME)) {
         for (Container c : component.getContainers()) {
-          if (c.getComponentInstanceName().equals(WORKER_COMPONENT_NAME + "-0")
+          if (c.getComponentInstanceName().equals(PRIMARY_WORKER_COMPONENT_NAME + "-0")
               && (c.getState() == ContainerState.READY
               || c.getState() == ContainerState.RUNNING_BUT_UNREADY)) {
             String hostname = c.getHostname();

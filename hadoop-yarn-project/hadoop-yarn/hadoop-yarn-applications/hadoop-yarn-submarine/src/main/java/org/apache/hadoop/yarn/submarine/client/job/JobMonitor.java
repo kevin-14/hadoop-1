@@ -54,12 +54,16 @@ public class JobMonitor {
     JobRunParameters parameters = clientContext.getRunJobParameters(jobName);
 
     // Wait 15 sec between each fetch.
-    int waitSec = 15;
+    int waitSec = 5;
     TrainingJobStatus js;
     while (true) {
       js = getTrainingJobStatus(jobName, clientContext);
       ServiceState jobState = js.getState();
       js.nicePrint(System.err);
+
+      if (clientContext.isVerbose()) {
+        js.printFullJson(System.err);
+      }
 
       if (jobState == ServiceState.FAILED || jobState == ServiceState.STOPPED) {
         break;

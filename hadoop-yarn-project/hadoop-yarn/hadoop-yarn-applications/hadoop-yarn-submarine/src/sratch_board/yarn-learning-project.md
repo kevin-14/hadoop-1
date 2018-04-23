@@ -65,29 +65,6 @@ yarn submarine job run --name wangda-tf-job-16 --docker_image wtan/tf-1.7.0-cuda
 ```
 --
 
-*Dockerfile*
---
-```
-FROM nvidia/cuda:9.0-cudnn7-runtime-centos7
-
-RUN yum -y install epel-release
-RUN yum -y install git gcc gcc-c++ python-pip python-devel atlas atlas-devel gcc-gfortran openssl-devel libffi-devel
-RUN pip install --upgrade tensorflow-gpu
-RUN mkdir /test
-RUN cd /test && git clone https://github.com/dsindex/tensorflow
-RUN cd /test && git clone https://github.com/tensorflow/models/
-
-# Install Hadoop (TODO, should use Apache version)
-RUN curl http://s3.amazonaws.com/dev.hortonworks.com/HDP/centos7/3.x/BUILDS/3.0.0.0-1089/hdpbn.repo > /etc/yum.repos.d/hdp.repo
-RUN yum install hadoop* java-1.8.0-openjdk.x86_64 -y
-RUN export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.161-0.b14.el7_4.x86_64/jre/
-
-COPY libcudnn.so* /usr/local/cuda/lib64/
-
-RUN chown -R nobody /test
-```
---
-
 *YALP script*
 --
 ```
