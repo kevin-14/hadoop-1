@@ -86,8 +86,9 @@ public abstract class AbstractClientProvider {
       if (file.getType() == null) {
         throw new IllegalArgumentException("File type is empty");
       }
+      ConfigFile.TypeEnum fileType = file.getType();
 
-      if (file.getType().equals(ConfigFile.TypeEnum.TEMPLATE)) {
+      if (fileType.equals(ConfigFile.TypeEnum.TEMPLATE)) {
         if (StringUtils.isEmpty(file.getSrcFile()) &&
             !file.getProperties().containsKey(CONTENT)) {
           throw new IllegalArgumentException(MessageFormat.format("For {0} " +
@@ -95,6 +96,18 @@ public abstract class AbstractClientProvider {
                   " or the \"{1}\" key must be specified in " +
                   "the 'properties' field of ConfigFile. ",
               ConfigFile.TypeEnum.TEMPLATE, CONTENT));
+        }
+      } else if (fileType.equals(ConfigFile.TypeEnum.STATIC) || fileType.equals(
+          ConfigFile.TypeEnum.ARCHIVE)) {
+        if (!file.getProperties().isEmpty()) {
+          throw new IllegalArgumentException(String
+              .format("For %s format, should not specify any 'properties.'",
+                  fileType));
+        }
+        if (file.getSrcFile() == null || file.getSrcFile().isEmpty()) {
+          throw new IllegalArgumentException(String.format(
+              "For %s format, should make sure that srcFile is specified",
+              fileType));
         }
       }
       if (!StringUtils.isEmpty(file.getSrcFile())) {

@@ -102,7 +102,6 @@ public class Component implements Serializable {
   private List<Container> containers =
       Collections.synchronizedList(new ArrayList<Container>());
 
-
   @JsonProperty("restart_policy")
   @XmlElement(name = "restart_policy")
   private RestartPolicyEnum restartPolicy = RestartPolicyEnum.ALWAYS;
