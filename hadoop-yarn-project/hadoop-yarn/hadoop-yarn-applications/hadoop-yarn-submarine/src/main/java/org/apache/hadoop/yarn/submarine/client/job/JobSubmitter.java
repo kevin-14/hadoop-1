@@ -41,8 +41,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.apache.hadoop.yarn.service.api.records.ConfigFile.TypeEnum.YAML;
-
 /**
  * Submit a job to cluster
  */
@@ -212,10 +210,10 @@ public class JobSubmitter {
     // Set it to component's files list
     component.getConfiguration().getFiles().add(new ConfigFile().srcFile(
         fileStatus.getPath().toUri().toString()).destFile(destScriptFileName)
-        .type(YAML));
+        .type(ConfigFile.TypeEnum.STATIC));
 
     // TODO, file should not be automatically put to ./conf
-    component.setLaunchCommand("bash -c ./conf/" + destScriptFileName);
+    component.setLaunchCommand("bash -c ./localized/" + destScriptFileName);
   }
 
   private void addCommonEnvironments(Component component, TaskType taskType) {
