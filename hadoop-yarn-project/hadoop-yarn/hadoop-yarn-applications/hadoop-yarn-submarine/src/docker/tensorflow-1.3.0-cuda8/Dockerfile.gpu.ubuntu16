@@ -51,13 +51,15 @@ RUN apt-get update && apt-get install git -y
 
 RUN mkdir /test
 RUN cd /test && git clone https://github.com/dsindex/tensorflow
-RUN cd /test && git clone -b master-1.7.0 https://github.com/leftnoteasy/models/
+RUN cd /test && git clone https://github.com/tensorflow/models/
 RUN chown -R nobody /test
 
-COPY cifar-10-data/ /tmp/cifar-10-data
-
 RUN apt-get update && apt-get install -y openjdk-8-jdk wget
-RUN wget http://apache.claz.org/hadoop/common/hadoop-3.1.0/hadoop-3.1.0.tar.gz
+RUN wget http://apache.cs.utah.edu/hadoop/common/hadoop-3.1.0/hadoop-3.1.0.tar.gz
 RUN tar zxf hadoop-3.1.0.tar.gz
 
-COPY /etc/hadoop/conf /etc/hadoop/conf/
+ADD hadoop-conf /etc/hadoop/conf/
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y krb5-user
+
+ADD passwd /etc/passwd
+ADD krb5.conf /etc/krb5.conf
