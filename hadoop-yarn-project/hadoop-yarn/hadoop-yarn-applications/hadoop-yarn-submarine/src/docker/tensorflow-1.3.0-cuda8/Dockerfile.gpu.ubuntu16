@@ -1,16 +1,11 @@
-FROM nvidia/cuda:9.0-base-ubuntu16.04
+FROM nvidia/cuda:8.0-cudnn6-devel-ubuntu16.04
+
+MAINTAINER Craig Citro <craigcitro@google.com>
 
 # Pick up some TF dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential \
-        cuda-command-line-tools-9-0 \
-        cuda-cublas-9-0 \
-        cuda-cufft-9-0 \
-        cuda-curand-9-0 \
-        cuda-cusolver-9-0 \
-        cuda-cusparse-9-0 \
         curl \
-        libcudnn7=7.0.5.15-1+cuda9.0 \
         libfreetype6-dev \
         libpng12-dev \
         libzmq3-dev \
@@ -48,7 +43,9 @@ RUN pip --no-cache-dir install \
 # RUN rm -f /_PIP_FILE_
 
 # Install TensorFlow GPU version.
-RUN pip install --upgrade tensorflow-gpu
+RUN pip --no-cache-dir install \
+    http://storage.googleapis.com/tensorflow/linux/gpu/tensorflow_gpu-1.3.0-cp27-none-linux_x86_64.whl
+
 
 RUN apt-get update && apt-get install git -y
 
@@ -63,5 +60,4 @@ RUN apt-get update && apt-get install -y openjdk-8-jdk wget
 RUN wget http://apache.claz.org/hadoop/common/hadoop-3.1.0/hadoop-3.1.0.tar.gz
 RUN tar zxf hadoop-3.1.0.tar.gz
 
-COPY hadoop-conf/core-site.xml /hadoop-3.1.0/etc/hadoop/core-site.xml
-# --- ~ DO NOT EDIT OR DELETE BETWEEN THE LINES --- #
+COPY /etc/hadoop/conf /etc/hadoop/conf/

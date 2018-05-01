@@ -1,0 +1,76 @@
+{
+  "name" : "wangda-tf-job-505",
+  "id" : "application_1524614478577_0001",
+  "artifact" : {
+    "id" : "wtan/tf-1.7.0-cuda9-ubuntu-cpu:0.0.1",
+    "type" : "DOCKER"
+  },
+  "lifetime" : -1,
+  "components" : [ {
+    "name" : "primary-worker",
+    "dependencies" : [ ],
+    "artifact" : {
+      "id" : "wtan/tf-1.7.0-cuda9-ubuntu-cpu:0.0.1",
+      "type" : "DOCKER"
+    },
+    "launch_command" : "bash -c ./localized/run-PRIMARY_WORKER.sh",
+    "resource" : {
+      "cpus" : 32,
+      "memory" : "20480",
+      "additional" : {
+        "memory-mb" : {
+          "value" : 20480,
+          "unit" : "Mi"
+        },
+        "yarn.io/gpu" : {
+          "value" : 2,
+          "unit" : ""
+        },
+        "vcores" : {
+          "value" : 32,
+          "unit" : ""
+        }
+      }
+    },
+    "number_of_containers" : 1,
+    "run_privileged_container" : false,
+    "state" : "FLEXING",
+    "configuration" : {
+      "properties" : { },
+      "env" : {
+        "_TASK_TYPE" : "PRIMARY_WORKER",
+        "HADOOP_CONF_DIR" : "/hadoop-3.1.0/etc/hadoop/",
+        "_TASK_INDEX" : "${COMPONENT_ID}",
+        "LD_LIBRARY_PATH" : "/usr/local/nvidia/lib:/usr/local/nvidia/lib64:/usr/local/nvidia/lib64/",
+        "HADOOP_HOME" : "",
+        "JAVA_HOME" : "/usr/lib/jvm/java-8-openjdk-amd64/jre/",
+        "HADOOP_HDFS_HOME" : "/hadoop-3.1.0",
+        "HADOOP_YARN_HOME" : ""
+      },
+      "files" : [ {
+        "type" : "STATIC",
+        "dest_file" : "run-PRIMARY_WORKER.sh",
+        "src_file" : "hdfs://9fa0b95385ec:8020/user/root/submarine/wangda-tf-job-505/staging/run-PRIMARY_WORKER.sh",
+        "properties" : { }
+      } ]
+    },
+    "quicklinks" : [ ],
+    "containers" : [ ],
+    "restart_policy" : "NEVER"
+  } ],
+  "configuration" : {
+    "properties" : { },
+    "env" : {
+      "HADOOP_CONF_DIR" : "/hadoop-3.1.0/etc/hadoop/",
+      "LD_LIBRARY_PATH" : "/usr/local/nvidia/lib:/usr/local/nvidia/lib64:/usr/local/nvidia/lib64/",
+      "HADOOP_HOME" : "",
+      "JAVA_HOME" : "/usr/lib/jvm/java-8-openjdk-amd64/jre/",
+      "HADOOP_HDFS_HOME" : "/hadoop-3.1.0",
+      "HADOOP_YARN_HOME" : ""
+    },
+    "files" : [ ]
+  },
+  "quicklinks" : { },
+  "kerberos_principal" : { },
+  "version" : "1524615060507"
+}
