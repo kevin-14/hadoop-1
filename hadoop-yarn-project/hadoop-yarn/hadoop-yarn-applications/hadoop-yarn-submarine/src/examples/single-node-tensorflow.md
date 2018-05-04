@@ -45,7 +45,7 @@ yarn application -destroy distributed-tf ; curl --negotiate -u: -H "Content-Type
             "dependencies": [],
             "resource": {
                 "cpus": 1,
-                "memory": "2048",
+                "memory": "4096",
                 "additional" : {
                   "yarn.io/gpu" : {
                     "value" : 2
