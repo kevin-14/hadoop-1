@@ -89,7 +89,7 @@ To delete services if you want to reuse the same service name.
     "components": [
         {
             "artifact" : {
-              "id" : "wtan/tf-on-yarn-example:1.3.0-gpu-003",
+              "id" : <docker-image-name>,
               "type" : "DOCKER"
             },
             "name": "worker",
@@ -227,7 +227,7 @@ Generates ```TF_CONFIG``` for given user_name, domain name at example.com (which
                 "memory": "4096"
             },
             "artifact" : {
-              "id" : "wtan/tf-on-yarn-example:1.3.0-cpu-001",
+              "id" : <docker-image-name>,
               "type" : "DOCKER"
             },
             "launch_command": "export HADOOP_HDFS_HOME=/hadoop-3.1.0; export HADOOP_HOME=; export HADOOP_YARN_HOME=; export CLASSPATH=\\`\\$HADOOP_HDFS_HOME/bin/hadoop classpath --glob\\`; export LD_LIBRARY_PATH=\\$LD_LIBRARY_PATH:/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/server/; cd /test/models/tutorials/image/cifar10_estimator && python cifar10_main.py --data-dir=hdfs://default/tmp/cifar-10-data --job-dir=hdfs://default/tmp/cifar-10-jobdir --train-steps=10000 --num-gpus=0 --eval-batch-size=16 --train-batch-size=16 --sync",
@@ -242,7 +242,7 @@ Generates ```TF_CONFIG``` for given user_name, domain name at example.com (which
                 "memory": "4096"
             },
             "artifact" : {
-              "id" : "wtan/tf-on-yarn-example:1.3.0-cpu-001",
+              "id" : <docker-image-name>,
               "type" : "DOCKER"
             },
             "launch_command": "export HADOOP_HDFS_HOME=/hadoop-3.1.0; export HADOOP_HOME=; export HADOOP_YARN_HOME=; export CLASSPATH=\\`\\$HADOOP_HDFS_HOME/bin/hadoop classpath --glob\\`; export LD_LIBRARY_PATH=\\$LD_LIBRARY_PATH:/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/server/; cd /test/models/tutorials/image/cifar10_estimator && python cifar10_main.py --data-dir=hdfs://default/tmp/cifar-10-data --job-dir=hdfs://default/tmp/cifar-10-jobdir --train-steps=10000 --num-gpus=0 --eval-batch-size=16 --train-batch-size=16 --sync",
@@ -257,7 +257,7 @@ Generates ```TF_CONFIG``` for given user_name, domain name at example.com (which
                 "memory": "2048"
             },
             "artifact" : {
-              "id" : "wtan/tf-on-yarn-example:1.3.0-cpu-001",
+              "id" : <docker-image-name>,
               "type" : "DOCKER"
             },
             "launch_command": "export HADOOP_HDFS_HOME=/hadoop-3.1.0; export HADOOP_HOME=; export HADOOP_YARN_HOME=; export CLASSPATH=\\`\\$HADOOP_HDFS_HOME/bin/hadoop classpath --glob\\`; export LD_LIBRARY_PATH=\\$LD_LIBRARY_PATH:/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/server/; cd /test/models/tutorials/image/cifar10_estimator  && ls -l && python cifar10_main.py --data-dir=hdfs://default/tmp/cifar-10-data --job-dir=hdfs://default/tmp/cifar-10-jobdir --num-gpus=0",
@@ -268,7 +268,7 @@ Generates ```TF_CONFIG``` for given user_name, domain name at example.com (which
     "configuration": {
         "properties": {},
         "env": {
-            "TF_CONFIG" : "{\\\"cluster\\\":{ \\\"master\\\":[\\\"master-0.distributed-tf.root.hwxdev.site:8000\\\"], \\\"ps\\\":[\\\"ps-0.distributed-tf.root.hwxdev.site:8000\\\"], \\\"worker\\\":[\\\"worker-0.distributed-tf.root.hwxdev.site:8000\\\"]}, \\\"task\\\": {\\\"type\\\":\\\"${COMPONENT_NAME}\\\", \\\"index\\\":${COMPONENT_ID}}, \\\"environment\\\":\\\"cloud\\\"}",
+            "TF_CONFIG" : <TODO: Generated TF_CONFIG>,
             "HADOOP_CONF_DIR" : "/etc/hadoop/conf",
             "JAVA_HOME" : "/usr/lib/jvm/java-8-openjdk-amd64/jre/",
             "YARN_CONTAINER_RUNTIME_DOCKER_CONTAINER_NETWORK": "bridge"

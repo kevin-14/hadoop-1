@@ -1,0 +1,42 @@
+{
+    "name": "single-node-tensorflow",
+    "version": "1.0.0",
+    "components": [
+        {
+            "artifact" : {
+              "id" : <docker-image-name>,
+              "type" : "DOCKER"
+            },
+            "name": "worker",
+            "dependencies": [],
+            "resource": {
+                "cpus": 1,
+                "memory": "4096",
+                "additional" : {
+                  "yarn.io/gpu" : {
+                    "value" : 2
+                   }
+                }
+            },
+            "launch_command": "export HADOOP_HDFS_HOME=<TODO: $HDFS_HOME>;
+                export HADOOP_HOME=; export HADOOP_YARN_HOME=; \
+                export CLASSPATH=\\`\\$HADOOP_HDFS_HOME/bin/hadoop classpath --glob\\`; \
+                export LD_LIBRARY_PATH=\\$LD_LIBRARY_PATH:\\$JAVA_HOME/lib/amd64/server/; \
+                <your-training-commandline>",
+            "number_of_containers": 1,
+            "run_privileged_container": false
+        }
+    ],
+    "configuration": {
+        "properties": {},
+        "env": {
+            "HADOOP_CONF_DIR" : <TODO: $HADOOP_CONF_DIR of the docker container>,
+            "JAVA_HOME" : <TODO: $JAVA_HOME of the docker container>,
+            "YARN_CONTAINER_RUNTIME_DOCKER_CONTAINER_NETWORK": "bridge"
+        }
+    }
+    "kerberos_principal" : {
+      "principal_name" : <your-principle-name>,
+      "keytab" : <path-to-your-keytab>
+    }
+}

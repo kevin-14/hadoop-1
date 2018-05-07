@@ -1,0 +1,88 @@
+{
+    "name": "distributed-tf",
+    "version": "1.0.0",
+    "components": [
+        {
+            "name": "master",
+            "dependencies": [],
+            "resource": {
+                "cpus": 1,
+                "memory": "4096",
+                "additional" : {
+                  "yarn.io/gpu" : {
+                    "value" : 2
+                   }
+                }
+            },
+            "artifact" : {
+              "id" : <TODO: docker image name>,
+              "type" : "DOCKER"
+            },
+            "launch_command": "export HADOOP_HDFS_HOME=/hadoop-3.1.0; \
+                export HADOOP_HOME=; export HADOOP_YARN_HOME=; \
+                export CLASSPATH=\\`\\$HADOOP_HDFS_HOME/bin/hadoop classpath --glob\\`; \
+                export LD_LIBRARY_PATH=\\$LD_LIBRARY_PATH:/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/server/; \
+                cd /test/models/tutorials/image/cifar10_estimator && python cifar10_main.py \
+                --data-dir=hdfs://default/tmp/cifar-10-data --job-dir=hdfs://default/tmp/cifar-10-jobdir \
+                --train-steps=10000 --num-gpus=2 --eval-batch-size=16 --train-batch-size=16 --sync",
+            "number_of_containers": 1,
+            "run_privileged_container": false
+        },
+        {
+            "name": "worker",
+            "dependencies": [],
+            "resource": {
+                "cpus": 1,
+                "memory": "4096",
+                "additional" : {
+                  "yarn.io/gpu" : {
+                    "value" : 2
+                  }
+                }
+            },
+            "artifact" : {
+              "id" : <TODO: docker image name>,
+              "type" : "DOCKER"
+            },
+            "launch_command": "export HADOOP_HDFS_HOME=/hadoop-3.1.0; \
+                export HADOOP_HOME=; export HADOOP_YARN_HOME=; \
+                export CLASSPATH=\\`\\$HADOOP_HDFS_HOME/bin/hadoop classpath --glob\\`; \
+                export LD_LIBRARY_PATH=\\$LD_LIBRARY_PATH:/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/server/; \
+                cd /test/models/tutorials/image/cifar10_estimator && python cifar10_main.py \
+                --data-dir=hdfs://default/tmp/cifar-10-data --job-dir=hdfs://default/tmp/cifar-10-jobdir \
+                --train-steps=10000 --num-gpus=2 --eval-batch-size=16 --train-batch-size=16 --sync",
+            "number_of_containers": 1,
+            "run_privileged_container": false
+        },
+        {
+            "name": "ps",
+            "dependencies": [],
+            "resource": {
+                "cpus": 1,
+                "memory": "2048"
+            },
+            "artifact" : {
+              "id" : <TODO: docker image name>,
+              "type" : "DOCKER"
+            },
+            "launch_command": "export HADOOP_HDFS_HOME=/hadoop-3.1.0; \
+                export HADOOP_HOME=; export HADOOP_YARN_HOME=; \
+                export CLASSPATH=\\`\\$HADOOP_HDFS_HOME/bin/hadoop classpath --glob\\`; \
+                export LD_LIBRARY_PATH=\\$LD_LIBRARY_PATH:/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/server/; \
+                cd /test/models/tutorials/image/cifar10_estimator  && ls -l && python cifar10_main.py \
+                --data-dir=hdfs://default/tmp/cifar-10-data --job-dir=hdfs://default/tmp/cifar-10-jobdir \
+                --num-gpus=0",
+            "number_of_containers": 1,
+            "run_privileged_container": false
+        }
+    ],
+    "configuration": {
+        "properties": {},
+        "env": {
+            "TF_CONFIG" : <TODO: add TF_CONFIG>,
+            "HADOOP_CONF_DIR" : "/etc/hadoop/conf",
+            "JAVA_HOME" : "/usr/lib/jvm/java-8-openjdk-amd64/jre/",
+            "YARN_CONTAINER_RUNTIME_DOCKER_CONTAINER_NETWORK": "bridge"
+        }
+    }
+}

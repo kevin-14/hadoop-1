@@ -1,0 +1,72 @@
+{
+    "name": "distributed-tf",
+    "version": "1.0.0",
+    "components": [
+        {
+            "name": "master",
+            "dependencies": [],
+            "resource": {
+                "cpus": 1,
+                "memory": "4096"
+            },
+            "artifact" : {
+              "id" : <TODO: your docker image name>,
+              "type" : "DOCKER"
+            },
+            "launch_command": "export HADOOP_HDFS_HOME=<TODO: $HDFS_HOME>; \
+                export HADOOP_HOME=; export HADOOP_YARN_HOME=; \
+                export CLASSPATH=\\`\\$HADOOP_HDFS_HOME/bin/hadoop classpath --glob\\`; \
+                export LD_LIBRARY_PATH=\\$LD_LIBRARY_PATH:\\$JAVA_HOME/lib/amd64/server/; \
+                <TODO: your commandline for master>",
+            "number_of_containers": 1,
+            "run_privileged_container": false
+        },
+        {
+            "name": "worker",
+            "dependencies": [],
+            "resource": {
+                "cpus": 1,
+                "memory": "4096"
+            },
+            "artifact" : {
+              "id" : <TODO: your docker image name>,
+              "type" : "DOCKER"
+            },
+            "launch_command": "export HADOOP_HDFS_HOME=<TODO: $HDFS_HOME>; \
+                export HADOOP_HOME=; export HADOOP_YARN_HOME=; \
+                export CLASSPATH=\\`\\$HADOOP_HDFS_HOME/bin/hadoop classpath --glob\\`; \
+                export LD_LIBRARY_PATH=\\$LD_LIBRARY_PATH:\\$JAVA_HOME/lib/amd64/server/; \
+                <TODO: your commandline for worker>",
+            "number_of_containers": <TODO: number of workers>,
+            "run_privileged_container": false
+        },
+        {
+            "name": "ps",
+            "dependencies": [],
+            "resource": {
+                "cpus": 1,
+                "memory": "2048"
+            },
+            "artifact" : {
+              "id" : <TODO: your docker image name>,
+              "type" : "DOCKER"
+            },
+            "launch_command": "export HADOOP_HDFS_HOME=<TODO: $HDFS_HOME>;
+                export HADOOP_HOME=; export HADOOP_YARN_HOME=; \
+                export CLASSPATH=\\`\\$HADOOP_HDFS_HOME/bin/hadoop classpath --glob\\`; \
+                export LD_LIBRARY_PATH=\\$LD_LIBRARY_PATH:\\$JAVA_HOME/lib/amd64/server/; \
+                <TODO: your commandline for ps>",
+            "number_of_containers": <TODO: number of workers>,
+            "run_privileged_container": false
+        }
+    ],
+    "configuration": {
+        "properties": {},
+        "env": {
+            "TF_CONFIG" : <TODO: insert generated $TF_CONFIG>,
+            "HADOOP_CONF_DIR" : <TODO: $HADOOP_CONF_DIR of the docker container>,
+            "JAVA_HOME" : <TODO: $JAVA_HOME of the docker container>,
+            "YARN_CONTAINER_RUNTIME_DOCKER_CONTAINER_NETWORK": "bridge"
+        }
+    }
+}
