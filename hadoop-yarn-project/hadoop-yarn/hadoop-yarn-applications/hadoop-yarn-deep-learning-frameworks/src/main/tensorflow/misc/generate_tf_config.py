@@ -15,8 +15,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-
 # Example Usage:
 #   python generate_tf_config.py <user_name> example.com distributed-tf 10 3
 # Generates TF_CONFIG for given user_name, domain name at example.com
@@ -27,7 +25,6 @@
 
 import code
 import sys
-
 def get_component_array(name, count, hostname_suffix):
     component = "\\\\" +  '\\"' + name + "\\\\" + '\\":'
     component_names = '['
@@ -37,12 +34,22 @@ def get_component_array(name, count, hostname_suffix):
             component_names = component_names + ','
     component_names = component_names + ']'
     return component + component_names
-
-# Generate TF_CONFIG from username and domainname. Use this to create an ENV variable which could be used as env in native service spec.
+def get_key_value_pair(name, keys, values, count):
+    block_name = "\\\\" +  '\\"' + name + "\\\\" + '\\":'
+    block_values = '{'
+    for i in xrange(0, count):
+        if count == 1:
+            block_values = block_values + "\\\\" + '\\' + '"' + values[i] + "\\\\" + '\\"'
+            break
+        block_values = block_values + "\\\\" + '\\' + '"' + keys[i] + "\\\\" + '\\"' + ':' + "\\\\" + '\\"' + values[i] + "\\\\" + '\\"'
+        if i != count - 1:
+            block_values = block_values + ','
+    block_values = block_values + '}'
+    return block_name + block_values
+# Generate TF_CONFIG from username and domain name. Use this to create an ENV variable which could be used as env in native service spec.
 if len (sys.argv) != 6 :
     print "Usage: python generate_tf_config.py <username> <domain_name> <service_name> <num_workers (exclude master)> <num_ps>"
     sys.exit (1)
-
 username = sys.argv[1]
 domain =  sys.argv[2]
 servicename = sys.argv[3]
@@ -53,8 +60,6 @@ cluster = '"{' + "\\\\" + '\\"cluster' + "\\\\" + '\\":{'
 master = get_component_array("master", 1, hostname_suffix) + ","
 ps = get_component_array("ps", num_ps, hostname_suffix) + ","
 worker = get_component_array("worker", num_worker, hostname_suffix) + "},"
-task = "\\{}\\".format("") +  '\\"task' + "\\{}\\".format("") + '\\":'
-types = '{' + "\\{}\\".format("") +  '\\"type' + "\\{}\\".format("") + '\\":' + "\\{}\\".format("") + '\\"$' + '{COMPONENT_NAME}' + "\\{}\\".format("") + '\\",'
-index = "\\{}\\".format("") +  '\\"index' + "\\{}\\".format("") + '\\":' + '$' + '{COMPONENT_ID}' + '},'
-env = "\\{}\\".format("") +  '\\"environment' + "\\{}\\".format("") + '\\":'  +"\\{}\\".format("") +  '\\"cloud' + "\\{}\\".format("") + '\\"}"'
-print '"{}"'.format("TF_CONFIG"), ":" , cluster, master, ps, worker, task, types, index, env
+task = get_key_value_pair("task", ["type", "index"], ["${COMPONENT_NAME}", "${COMPONENT_ID}"], 2) + ","
+env = get_key_value_pair("environment", "", ["cloud"], 1) + "}" + '"'
+print '"{}"'.format("TF_CONFIG"), ":" , cluster, master, ps, worker, task, env

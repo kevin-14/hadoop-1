@@ -81,7 +81,7 @@
             "TF_CONFIG" : <TODO: insert generated $TF_CONFIG>,
             "HADOOP_CONF_DIR" : <TODO: $HADOOP_CONF_DIR of the docker container>,
             "JAVA_HOME" : <TODO: $JAVA_HOME of the docker container>,
-            "YARN_CONTAINER_RUNTIME_DOCKER_CONTAINER_NETWORK": "bridge"
+            "YARN_CONTAINER_RUNTIME_DOCKER_CONTAINER_NETWORK": "bridge (Or other overlay network)"
         }
     }
 }
