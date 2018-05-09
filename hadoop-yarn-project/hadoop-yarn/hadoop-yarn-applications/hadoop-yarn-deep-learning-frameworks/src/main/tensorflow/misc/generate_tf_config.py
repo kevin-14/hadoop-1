@@ -36,12 +36,13 @@ def get_component_array(name, count, hostname_suffix):
     return component + component_names
 def get_key_value_pair(name, keys, values, count):
     block_name = "\\\\" +  '\\"' + name + "\\\\" + '\\":'
+    block_values = ''
+    if count == 1:
+        block_values = block_values + "\\\\" + '\\' + '"' + values[0] + "\\\\" + '\\"'
+        return block_name + block_values
     block_values = '{'
     for i in xrange(0, count):
-        if count == 1:
-            block_values = block_values + "\\\\" + '\\' + '"' + values[i] + "\\\\" + '\\"'
-            break
-        block_values = block_values + "\\\\" + '\\' + '"' + keys[i] + "\\\\" + '\\"' + ':' + "\\\\" + '\\"' + values[i] + "\\\\" + '\\"'
+        block_values = block_values + "\\\\" + '\\' + '"' + keys[i] + "\\\\" + '\\"' + ':' +  values[i]
         if i != count - 1:
             block_values = block_values + ','
     block_values = block_values + '}'
@@ -60,6 +61,8 @@ cluster = '"{' + "\\\\" + '\\"cluster' + "\\\\" + '\\":{'
 master = get_component_array("master", 1, hostname_suffix) + ","
 ps = get_component_array("ps", num_ps, hostname_suffix) + ","
 worker = get_component_array("worker", num_worker, hostname_suffix) + "},"
-task = get_key_value_pair("task", ["type", "index"], ["${COMPONENT_NAME}", "${COMPONENT_ID}"], 2) + ","
+component_name = "\\\\" + '\\"' + "${COMPONENT_NAME}" + "\\\\" + '\\"'
+component_id = "${COMPONENT_ID}"
+task = get_key_value_pair("task", ["type", "index"], [component_name, component_id], 2) + ","
 env = get_key_value_pair("environment", "", ["cloud"], 1) + "}" + '"'
 print '"{}"'.format("TF_CONFIG"), ":" , cluster, master, ps, worker, task, env
