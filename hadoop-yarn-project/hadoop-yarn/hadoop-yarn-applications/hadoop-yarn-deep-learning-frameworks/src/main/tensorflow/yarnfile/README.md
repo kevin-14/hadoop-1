@@ -19,7 +19,7 @@
 
 ## Identifying key parameters specific to Tensorflow application
 
-1) Defining resource needed for each component from YARN
+### 1) Defining resource needed for each component from YARN
 ```
 "resource": {
     "cpus": 1,
@@ -39,7 +39,7 @@ After configuring GPU's in resource section, user can provide `--num-gpus=2` in 
 
 Note: For this example, 2 GPU resources are used for reference. User could choose any number of devices as required for the Tensorflow workload based on GPU resources available in cluster.
 
-2) Using HDFS as storage layer
+### 2) Using HDFS as storage layer
 
 ```
  "launch_command": "export HADOOP_HDFS_HOME=<TODO: $HDFS_HOME>;
@@ -63,7 +63,7 @@ python cifar10_main.py --data-dir=hdfs://default/tmp/cifar-10-data \
 --job-dir=hdfs://default/tmp/cifar-10-jobdir --train-steps=10000 --num-gpus=2
 ```
 
-3) Running Tensorflow apps in a secure YARN cluster
+### 3) Running Tensorflow apps in a secure YARN cluster
 
 YARN Native Services provide an easy way to run services in a secure cluster by providing keytabs and kerberos principal as simple json input parameters.
 ```
@@ -74,7 +74,7 @@ YARN Native Services provide an easy way to run services in a secure cluster by 
 ```
 User could define the kerberos principal name (eg: test-user@EXAMPLE.COM) and keytab file path from HDFS or local file system. Given these information, user could run service from a secured shell.
 
-4) Defining custom environment variables
+### 4) Defining custom environment variables
 
 ```
 "env": {
@@ -93,7 +93,7 @@ b) `JAVA_HOME`: User could configure the java home patch as a common env variabl
 
 c) `YARN_CONTAINER_RUNTIME_DOCKER_CONTAINER_NETWORK`: Based on the cluster network topology, user could choose network as `bridge` or other overlay networks as per the cluster configurations. (for eg: bridge, hadoop, host)
 
-5) Choosing correct Docker images for the application
+### 5) Choosing correct Docker images for the application
 ```
 "artifact" : {
   "id" : <TODO: docker image name>,

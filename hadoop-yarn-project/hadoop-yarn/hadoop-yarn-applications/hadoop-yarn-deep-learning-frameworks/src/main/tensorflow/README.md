@@ -289,8 +289,8 @@ allow_soft_placement: true
 }
 ...
 2018-05-06 22:29:14.656022: I tensorflow/core/distributed_runtime/rpc/grpc_channel.cc:215] Initialize GrpcChannelCache for job master -> {0 -> localhost:8000}
-2018-05-06 22:29:14.656097: I tensorflow/core/distributed_runtime/rpc/grpc_channel.cc:215] Initialize GrpcChannelCache for job ps -> {0 -> ps-0.distributed-tf.root.hwxdev.site:8000}
-2018-05-06 22:29:14.656112: I tensorflow/core/distributed_runtime/rpc/grpc_channel.cc:215] Initialize GrpcChannelCache for job worker -> {0 -> worker-0.distributed-tf.root.hwxdev.site:8000}
+2018-05-06 22:29:14.656097: I tensorflow/core/distributed_runtime/rpc/grpc_channel.cc:215] Initialize GrpcChannelCache for job ps -> {0 -> ps-0.distributed-tf.root.tensorflow.site:8000}
+2018-05-06 22:29:14.656112: I tensorflow/core/distributed_runtime/rpc/grpc_channel.cc:215] Initialize GrpcChannelCache for job worker -> {0 -> worker-0.distributed-tf.root.tensorflow.site:8000}
 2018-05-06 22:29:14.659359: I tensorflow/core/distributed_runtime/rpc/grpc_server_lib.cc:316] Started server with target: grpc://localhost:8000
 ...
 INFO:tensorflow:Restoring parameters from hdfs://default/tmp/cifar-10-jobdir/model.ckpt-0
@@ -319,8 +319,8 @@ Sample output of worker:
   per_process_gpu_memory_fraction: 1.0
 }
 ...
-2018-05-06 22:28:45.807936: I tensorflow/core/distributed_runtime/rpc/grpc_channel.cc:215] Initialize GrpcChannelCache for job master -> {0 -> master-0.distributed-tf.root.hwxdev.site:8000}
-2018-05-06 22:28:45.808040: I tensorflow/core/distributed_runtime/rpc/grpc_channel.cc:215] Initialize GrpcChannelCache for job ps -> {0 -> ps-0.distributed-tf.root.hwxdev.site:8000}
+2018-05-06 22:28:45.807936: I tensorflow/core/distributed_runtime/rpc/grpc_channel.cc:215] Initialize GrpcChannelCache for job master -> {0 -> master-0.distributed-tf.root.tensorflow.site:8000}
+2018-05-06 22:28:45.808040: I tensorflow/core/distributed_runtime/rpc/grpc_channel.cc:215] Initialize GrpcChannelCache for job ps -> {0 -> ps-0.distributed-tf.root.tensorflow.site:8000}
 2018-05-06 22:28:45.808064: I tensorflow/core/distributed_runtime/rpc/grpc_channel.cc:215] Initialize GrpcChannelCache for job worker -> {0 -> localhost:8000}
 2018-05-06 22:28:45.809919: I tensorflow/core/distributed_runtime/rpc/grpc_server_lib.cc:316] Started server with target: grpc://localhost:8000
 ...
@@ -341,8 +341,8 @@ Sample output of ps:
   per_process_gpu_memory_fraction: 1.0
 }
 ...
-2018-05-06 22:28:42.562316: I tensorflow/core/distributed_runtime/rpc/grpc_channel.cc:215] Initialize GrpcChannelCache for job master -> {0 -> master-0.distributed-tf.root.hwxdev.site:8000}
+2018-05-06 22:28:42.562316: I tensorflow/core/distributed_runtime/rpc/grpc_channel.cc:215] Initialize GrpcChannelCache for job master -> {0 -> master-0.distributed-tf.root.tensorflow.site:8000}
 2018-05-06 22:28:42.562408: I tensorflow/core/distributed_runtime/rpc/grpc_channel.cc:215] Initialize GrpcChannelCache for job ps -> {0 -> localhost:8000}
-2018-05-06 22:28:42.562433: I tensorflow/core/distributed_runtime/rpc/grpc_channel.cc:215] Initialize GrpcChannelCache for job worker -> {0 -> worker-0.distributed-tf.root.hwxdev.site:8000}
+2018-05-06 22:28:42.562433: I tensorflow/core/distributed_runtime/rpc/grpc_channel.cc:215] Initialize GrpcChannelCache for job worker -> {0 -> worker-0.distributed-tf.root.tensorflow.site:8000}
 2018-05-06 22:28:42.564242: I tensorflow/core/distributed_runtime/rpc/grpc_server_lib.cc:316] Started server with target: grpc://localhost:8000
 ```
