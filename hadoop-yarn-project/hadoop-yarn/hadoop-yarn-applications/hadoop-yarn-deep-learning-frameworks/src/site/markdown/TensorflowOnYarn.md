@@ -75,7 +75,7 @@ To delete services if you want to reuse the same service name.
 
 ### Generate Dockerfiles
 
-Please refer to ```dockerfile/README.md``` for more details.
+Please refer to [Dockerfile for running on Tensorflow on YARN](Dockerfile.html) for more details.
 
 ### Single node Tensorflow (with GPU and access Kerberorized HDFS)
 
