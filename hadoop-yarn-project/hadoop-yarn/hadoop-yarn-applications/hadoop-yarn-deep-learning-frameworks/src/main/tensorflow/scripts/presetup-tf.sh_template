@@ -20,7 +20,15 @@
 # 2. Using bash shell
 
 export HADOOP_HDFS_HOME=<TODO: Provide HDFS Home DIR here>
+
+# Intentionally leave HADOOP_HOME and HADOOP_YARN_HOME empty
 export HADOOP_HOME=
 export HADOOP_YARN_HOME=
-export CLASSPATH=\\`\\$HADOOP_HDFS_HOME/bin/hadoop classpath --glob\\`
-export LD_LIBRARY_PATH=\\$LD_LIBRARY_PATH:/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/server/
+
+# Setup $HADOOP_CONF_DIR, by default submit_tf_job.py mounts cluster
+# Hadoop configs to /etc/hadoop/conf
+export HADOOP_CONF_DIR=/etc/hadoop/conf
+
+export JAVA_HOME=<TODO: JAVA_HOME inside Docker image>
+export CLASSPATH=`$HADOOP_HDFS_HOME/bin/hadoop classpath --glob`
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$JAVA_HOME
