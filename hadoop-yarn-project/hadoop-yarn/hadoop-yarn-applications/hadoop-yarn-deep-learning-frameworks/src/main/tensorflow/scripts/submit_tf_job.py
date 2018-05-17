@@ -17,8 +17,7 @@
 # limitations under the License.
 
 # Usage and Assumptions:
-# 1. presetup-tf.sh uploaded to hdfs under $remote_conf_path
-# 2. /scripts dir is created in dockerfile to keep presetup-tf.sh
+# presetup-tf.sh uploaded to hdfs under $remote_conf_path
 
 import argparse
 import json
@@ -99,10 +98,10 @@ if __name__ == "__main__":
         description='Submit Tensorflow job to YARN.')
 
     # Required positional argument
-    parser.add_argument('--remote_conf_path', type=str,
+    parser.add_argument('-remote_conf_path', type=str,
                         help='Remote Configuration path to run TF job',
                         required=True)
-    parser.add_argument('--input_spec', type=str,
+    parser.add_argument('-input_spec', type=str,
                         help='Yarnfile specification for TF job.',
                         required=True)
     parser.add_argument('--docker_image', type=str,

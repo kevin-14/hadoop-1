@@ -52,7 +52,6 @@
   "configuration": {
     "properties": {},
     "env": {
-      "ABC": "DEF"
     }
   },
   "kerberos_principal" : {

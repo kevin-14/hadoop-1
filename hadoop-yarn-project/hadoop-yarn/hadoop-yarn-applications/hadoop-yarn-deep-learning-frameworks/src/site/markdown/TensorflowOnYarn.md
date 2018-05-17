@@ -39,6 +39,11 @@ python generate_cifar10_tfrecords.py --data-dir=/tmp/cifar-10-data
 hadoop fs -put /tmp/cifar-10-data/ /tmp/
 ```
 
+## Use auto generated Yarnfile and run job
+With the help to custom python scripts, user can run Tensorflow jobs easily by auto creating Yarnfile.
+
+Please refer to [Quick guide to run Tensorflow on YARN automatically](SubmitTensorflowService.html) for more details.
+
 ## Use Yarnfile and run job 
 
 Yarnfile is a normal JSON file, typically you should save the Yarnfile to a local file and use following command to run:
