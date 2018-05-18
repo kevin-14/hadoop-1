@@ -60,9 +60,3 @@ RUN apt-get update && apt-get install git -y
 RUN apt-get update && apt-get install -y openjdk-8-jdk wget
 RUN wget http://apache.cs.utah.edu/hadoop/common/hadoop-3.1.0/hadoop-3.1.0.tar.gz
 RUN tar zxf hadoop-3.1.0.tar.gz
-
-ADD hadoop-conf /etc/hadoop/conf/
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y krb5-user
-
-ADD passwd /etc/passwd
-ADD krb5.conf /etc/krb5.conf

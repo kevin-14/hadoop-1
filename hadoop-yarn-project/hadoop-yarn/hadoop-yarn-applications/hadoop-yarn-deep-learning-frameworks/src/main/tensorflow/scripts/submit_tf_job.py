@@ -249,3 +249,5 @@ if __name__ == "__main__":
     else:
         jstr = json.dumps(tf_json, sort_keys=False, indent=2)
         print(jstr)
+
+~~ Should this covers automatically set bridge to network?

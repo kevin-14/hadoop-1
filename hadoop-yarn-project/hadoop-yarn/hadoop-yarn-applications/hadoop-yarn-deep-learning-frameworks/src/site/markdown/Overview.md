@@ -20,8 +20,5 @@
 ## Contents
 
 ### Running Tensorflow on YARN
-
-  * [Tutorials: Running Tensorflow on YARN](TensorflowOnYarn.html)
-  * [How to write Yarnfile to run Tensorflow on YARN](Yarnfile.html)
+  * [Tutorials: Running Tensorflow on YARN](TensorflowOnYarnTutorial.html)
   * [How to write Dockerfile to run Tensorflow on YARN](Dockerfile.html)
-  * [Quick guide to run Tensorflow on YARN automatically](SubmitTensorflowService.html)

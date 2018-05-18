@@ -45,7 +45,7 @@
           }
         }
       },
-      "launch_command": "cd /test/models/tutorials/image/cifar10_estimator  && ls -l && python cifar10_main.py --data-dir=hdfs://default/tmp/cifar-10-data --job-dir=hdfs://default/tmp/cifar-10-jobdir --num-gpus=1",
+      "launch_command": "cd /test/models/tutorials/image/cifar10_estimator && python cifar10_main.py --data-dir=hdfs://default/tmp/cifar-10-data --job-dir=hdfs://default/tmp/cifar-10-jobdir --num-gpus=1",
       "number_of_containers": 1
     }
   ],
