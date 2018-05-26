@@ -30,5 +30,5 @@ export HADOOP_YARN_HOME=
 export HADOOP_CONF_DIR=/etc/hadoop/conf
 
 export JAVA_HOME=<TODO: JAVA_HOME inside Docker image>
-export CLASSPATH=`$HADOOP_HDFS_HOME/bin/hadoop classpath --glob`
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$JAVA_HOME
+export CLASSPATH=`$HADOOP_HDFS_HOME/bin/hadoop classpath --glob`:$HADOOP_CONF_DIR
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${JAVA_HOME}/jre/lib/amd64/server

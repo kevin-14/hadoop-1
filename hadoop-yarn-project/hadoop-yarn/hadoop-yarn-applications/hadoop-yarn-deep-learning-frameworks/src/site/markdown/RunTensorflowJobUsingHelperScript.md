@@ -18,25 +18,23 @@
 # Run Tensorflow Jobs Using Helper Script
 
 ## Prerequisites
-1) User need to ensure that script `submit_tf_job.py` is placed with other template files such as `presetup_tf.sh_template` and `example_tf_job_spec.json` in same folder.
-~~ This not required, correct?
-2) Sufficient permissions (authorization and authentication, like `kinit`) are needed for the user (in case of secure cluster) to run this script as it could also support submitting Tensorflow service directly to YARN.
+1) Sufficient permissions (authorization and authentication, like `kinit`) are needed for the user (in case of secure cluster) to run `submit_tf_job.py` script as it could also support submitting Tensorflow service directly to YARN.
+
+2) User could be use `--input_spec` argument to specify a sample spec file as a template. This package has `example_tf_job_spec.json` sample spec file and user could edit this file to specify resources per component and kerberos specification if needed. 
 
 ## Setup presetup_tf.sh template
 1) Rename `presetup_tf.sh_template` to `presetup_tf.sh`
 
-2) In `presetup_tf.sh`:
-- Update valid `HADOOP_HDFS_HOME` value as per cluster configuration.
-- Update `JAVA_HOME` as per the environment setup. This should point to `JAVA_HOME` **inside the docker image**.
+2) In `presetup_tf.sh`
 
-4) Place `presetup-tf.sh` in HDFS under `hdfs://host:port/<tf-job-conf-path>/scripts`.
-~~ I would prefer to remove the `scripts`, this is just like yarn-env.sh, we can directly place it under /etc/hadoop/conf instead of /etc/hadoop/conf/scripts. This requries changes to python file.
+    * Update valid `HADOOP_HDFS_HOME` value as per cluster configuration preferred in Dockerfile.
+    * Update `JAVA_HOME` as per the environment setup. This should point to `JAVA_HOME` **inside the docker image**.
 
-5) Ensure that `<tf-job-conf-path>` is created and available in the docker container. Config files will be copied from HDFS to this location for each container.
-~~ Why this is required in the docker container? I think YARN will localize it and mount to docker docker. 
-~~ I would suggest to just state that, <tf-job-conf-path> in HDFS folder should be accessible by the submit user.
+3) Place `presetup-tf.sh` in HDFS under `hdfs://host:port/<tf-job-conf-path>/`.
 
-6) Upload core-site.xml, hdfs-site.xml, and (when security is enabled) krb5.conf to `<tf-job-conf-path>`.
+4) Ensure that `<tf-job-conf-path>` is accessible with correct permission for user. Config files will be copied from HDFS to each container under `reosurces` folder.
+
+5) Upload core-site.xml, hdfs-site.xml, and (when security is enabled) krb5.conf to `<tf-job-conf-path>`.
 
 ## Run submit_tf_job.py to submit Tensorflow job to YARN
 
@@ -47,8 +45,8 @@ Detailed argument summary for `submit_tf_job.py` command.
 
 ```
 mandatory arguments:
-  -remote_conf_path    Remote Configuration path to run TF job, this is a HDFS path.
-  -input_spec          Yarnfile specification template for TF job
+  -remote_conf_path    Remote Configuration path to run TF job, this is an HDFS path.
+  -input_spec          Yarnfile specification template for TF job. Refer `example_tf_job_spec.json` for detail.
 
 optional arguments:
   --docker_image        Docker image name for TF job.
@@ -62,6 +60,7 @@ optional arguments:
                         overwrite the one specified in input spec file
   --user                Specify user name if it is different from $USER (e.g.
                         kinit user)
+  --gpu                 Number of GPU devices needed per component. Default is 0.
   --domain              Cluster domain name, which should be same as
                         hadoop.registry.dns.domain-name in yarn-site.xml,
                         required for distributed Tensorflow
@@ -225,10 +224,11 @@ User can use `--docker_image` to overwrite whatever defined in the input job spe
 
 ### Run Cifar10 distributed Tensorflow training on GPU/security-enabled cluster
 
-~~ Do this after we validate example and fix further issues of submit-tf-job.py script
-~~ <TODO>: Add an end-to-end example to make sure user can play with. Which can simply include:
-~~ launch command line.
-~~ Dockerfile (path to local file)
-~~ Input-YARN-file (path to local file)
-~~ (We may not need other examples since user can easily update to use non-GPU, non-security, single node, etc.
+#### Launch Command
+```
+python submit_tf_job.py -remote_conf_path hdfs:///tf-job-conf -input_spec example_tf_job_spec.json --docker_image gpu.cuda_8.0.tf_1.3.0 --job_name distributed-tf-cpu --user tf-user --domain tensorflow.site --gpu 1 --distributed --kerberos --submit
+```
 
+- `docker_image` file could be found under `tensorflow/dockerfile/with-models/ubuntu-16.04/Dockerfile.gpu.cuda_8.0.tf_1.3.0` from Hadoop codebase and we assume docker image is created named as `gpu.cuda_8.0.tf_1.3.0` from this file.
+- `input_spec` file could be found under `tensorflow/scripts/example_tf_job_spec.json` from Hadoop codebase and make the necessary edits as needed.
+- `--submit` is an optional parameter which helps to submit this Tensorflow job directly to YARN provided this command is fired from a Hadoop cluster node.

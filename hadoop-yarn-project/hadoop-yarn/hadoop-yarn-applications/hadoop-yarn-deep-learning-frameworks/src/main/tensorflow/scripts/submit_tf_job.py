@@ -120,6 +120,9 @@ if __name__ == "__main__":
                              'will overwrite the one specified in input spec '
                              'file',
                         required=False)
+    parser.add_argument('--gpu', type=str, default=0,
+                        help='Specify number of GPUs needed per component.',
+                        required=False)
     parser.add_argument('--user', type=str,
                         help='Specify user name if it is different from $USER '
                              '(e.g. kinit user)',
@@ -161,6 +164,9 @@ if __name__ == "__main__":
     if hasattr(args, 'docker_image'):
         docker_image = args.docker_image
     kerberos = args.kerberos
+    num_gpu = -1
+    if hasattr(args, 'gpu'):
+        num_gpu = int(args.gpu)
 
     # Only print when verbose
     if verbose:
@@ -168,6 +174,7 @@ if __name__ == "__main__":
         print "input_spec_file=", input_json_spec
         print "submit=", submit_to_yarn
         print "user=", user
+        print "gpu=", num_gpu
 
     with open(input_json_spec) as json_file:
         data = json_file.read()
@@ -179,7 +186,8 @@ if __name__ == "__main__":
     # Updating per-component commands with presetup-tf.sh
     for component in tf_json['components']:
         # Append presetup-tf.sh to launch command
-        launch_cmd = '. /presetup-tf.sh && ' + component['launch_command']
+        launch_cmd = '. resources/presetup-tf.sh && ' + component['launch_command'] \
+                    + ' --num-gpus=' + `num_gpu`
         component['launch_command'] = launch_cmd
 
         if verbose:
@@ -193,6 +201,10 @@ if __name__ == "__main__":
             if verbose:
                 print "Using docker image=", docker_image
 
+        if num_gpu > 0:
+            component['resource']['additional'] = {}
+            component['resource']['additional']['yarn.io/gpu'] = {}
+            component['resource']['additional']['yarn.io/gpu']['value'] = num_gpu
         artifact = component.get('artifact')
         if artifact is None or artifact.get('id') is None:
             raise Exception("Docker image for components doesn't set, please"
@@ -221,14 +233,16 @@ if __name__ == "__main__":
     if len(docker_mounts) > 0:
         docker_mounts = docker_mounts + ","
     docker_mounts = docker_mounts + \
-                    "core-site.xml:/etc/hadoop/conf/core-site.xml:ro," \
-                    "hdfs-site.xml:/etc/hadoop/conf/hdfs-site.xml:ro"
+                    "resources/core-site.xml:/etc/hadoop/conf/core-site.xml:ro," \
+                    "resources/hdfs-site.xml:/etc/hadoop/conf/hdfs-site.xml:ro"
 
     if kerberos:
         srcfiles.append(remote_path + '/configs/krb5.conf')
         destfiles.append('krb5.conf')
-        docker_mounts = docker_mounts + ",krb5.conf:/etc/krb5.conf:ro"
+        docker_mounts = docker_mounts + ",resources/krb5.conf:/etc/krb5.conf:ro"
 
+    docker_mounts = docker_mounts + ",/etc/passwd:/etc/passwd:ro" + \
+                    ",/etc/group:/etc/group:ro"
     file_envs = [{"type": "STATIC", "dest_file": d, "src_file": s} for d, s in
                  zip(destfiles, srcfiles)]
     tf_json['configuration']['files'] = file_envs
@@ -249,5 +263,3 @@ if __name__ == "__main__":
     else:
         jstr = json.dumps(tf_json, sort_keys=False, indent=2)
         print(jstr)
-
-~~ Should this covers automatically set bridge to network?
