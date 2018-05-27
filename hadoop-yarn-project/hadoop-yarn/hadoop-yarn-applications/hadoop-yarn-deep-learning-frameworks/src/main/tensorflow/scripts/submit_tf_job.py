@@ -50,7 +50,7 @@ def get_key_value_pair(name, keys, values, count):
     return block_name + block_values
 
 
-def handle_tf_config_env(tf_json, username, domain):
+def handle_distributed_tf_config_env(tf_json, username, domain):
     if username is None or username == '':
         raise Exception("Empty username specified, please double check")
     if domain is None or domain == '':
@@ -200,7 +200,7 @@ if __name__ == "__main__":
                             "--docker-image <image-name> commandline")
 
     if distributed:
-        handle_tf_config_env(tf_json, user, domain)
+        handle_distributed_tf_config_env(tf_json, user, domain)
 
     # Update conf files to mount in files section.
     spec_envs = tf_json['configuration']['env']

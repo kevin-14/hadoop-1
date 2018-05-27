@@ -77,11 +77,6 @@ On top of above image, add files, install packages to access HDFS
 RUN apt-get update && apt-get install -y openjdk-8-jdk wget
 RUN wget http://apache.cs.utah.edu/hadoop/common/hadoop-3.1.0/hadoop-3.1.0.tar.gz
 RUN tar zxf hadoop-3.1.0.tar.gz
-
-# mount etc/passwd to properly use users.
-ADD etc/passwd /etc/passwd
-
-~~ I think our script should take care of this one, please confirm this.
 ```
 
 Build and push to your own docker registry: Use ```docker build ... ``` and ```docker push ...``` to finish this step.

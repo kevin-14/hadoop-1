@@ -27,54 +27,55 @@
 
 2) In `presetup_tf.sh`
 
-    * Update valid `HADOOP_HDFS_HOME` value as per cluster configuration preferred in Dockerfile.
+    * Update valid `HADOOP_HDFS_HOME`. This should point to `HADOOP_HDFS_HOME` **inside the docker image**.
     * Update `JAVA_HOME` as per the environment setup. This should point to `JAVA_HOME` **inside the docker image**.
 
 3) Place `presetup-tf.sh` in HDFS under `hdfs://host:port/<tf-job-conf-path>/`.
 
-4) Ensure that `<tf-job-conf-path>` is accessible with correct permission for user. Config files will be copied from HDFS to each container under `reosurces` folder.
+4) Ensure that `<tf-job-conf-path>` is accessible with correct permission for user.
 
-5) Upload core-site.xml, hdfs-site.xml, and (when security is enabled) krb5.conf to `<tf-job-conf-path>`.
+5) Upload core-site.xml, hdfs-site.xml to `<tf-job-conf-path>`.
 
-## Run submit_tf_job.py to submit Tensorflow job to YARN
+6) (when security is enabled) Upload krb5.conf to `<tf-job-conf-path>`.
+
+## Run `submit_tf_job.py` to submit Tensorflow job to YARN
 
 User could run below command to submit Tensorflow job to YARN or to generate valid Yarnfile for the job.
-`python submit_tf_job.py --remote_conf_path <tf-job-conf-path> --input_spec <INPUT_SPEC> --docker_image <DOCKER_IMAGE> --env <ENV> --job_name <JOB_NAME> --user <USER> --domain <DOMAIN> --submit --distributed --kerberos`
+`python submit_tf_job.py --remote_conf_path <tf-job-conf-path> --input_spec <INPUT_SPEC> --docker_image <DOCKER_IMAGE> --env <ENV> --job_name <JOB_NAME> --user <USER> --domain <DOMAIN> --distributed --kerberos`
 
 Detailed argument summary for `submit_tf_job.py` command.
 
 ```
-mandatory arguments:
-  -remote_conf_path    Remote Configuration path to run TF job, this is an HDFS path.
-  -input_spec          Yarnfile specification template for TF job. Refer `example_tf_job_spec.json` for detail.
-
 optional arguments:
-  --docker_image        Docker image name for TF job.
-  --env                 Environment variables needed for TF job in key=value
+  -h, --help            show this help message and exit
+  --remote_conf_path REMOTE_CONF_PATH
+                        Remote Configuration path to run TF job should include
+                        core-site.xml/hdfs-site.xml/presetup-tf.sh, etc.
+  --input_spec INPUT_SPEC
+                        Yarnfile specification for TF job.
+  --docker_image DOCKER_IMAGE
+                        Docker image name for TF job.
+  --env ENV             Environment variables needed for TF job in key=value
                         format.
-  --submit              Automatically submit TF job to YARN, if this is not
-                        specified. New generated spec will be printed to
-                        <stdout>, and user can use yarn app -launch
-                        <path/to/spec> to launch it later.
-  --job_name            Specify job name of the Tensorflow job, which will
+  --dry_run             When this is not specified (default behavior), YARN
+                        service will be automatically submited. When this is
+                        not specified, generated YARN service spec will be
+                        printed to stdout
+  --job_name JOB_NAME   Specify job name of the Tensorflow job, which will
                         overwrite the one specified in input spec file
-  --user                Specify user name if it is different from $USER (e.g.
+  --user USER           Specify user name if it is different from $USER (e.g.
                         kinit user)
-  --gpu                 Number of GPU devices needed per component. Default is 0.
-  --domain              Cluster domain name, which should be same as
+  --domain DOMAIN       Cluster domain name, which should be same as
                         hadoop.registry.dns.domain-name in yarn-site.xml,
                         required for distributed Tensorflow
   --distributed         Running distributed tensorflow, if this is specified,
                         worker/ps/master must be included inside input spec
   --kerberos            Is this a kerberos-enabled cluster or not
   --verbose             Print debug information
-  -h, --help            show this help message and exit
 ```
 
 Example:
-`python src/main/tensorflow/scripts/submit_tf_job.py --remote_conf_path='hdfs://host:port/<tf-job-conf-path>' --input_spec=src/main/tensorflow/scripts/example_tf_job_spec.json --job_name=job_123 --domain example.com --distributed --verbose --docker_image=ubuntu16:04`
-
-`--submit` will be help user to auto-submit TF job to YARN given this command is ran from a Hadoop box.
+`python submit_tf_job.py --input_spec example_tf_job_spec.json --docker_image tf-gpu:ubuntu-xyz --job_name distributed-tf --user ambari-qa --domain <your_domain_name>.com --remote_conf_path hdfs:///tf-job-conf/configs --distributed`
 
 ## Provide `input-spec` file to run Tensorflow jobs
 
@@ -120,7 +121,6 @@ Notes:
 - Component name can be customized (In above example it uses `worker`)
 - In `resource` section, you can specify cpu/memory/gpu if you needed.
 - Additional environment variables can be specified under `env`. This will be passed to launched docker container process.
-- 
 
 ### Run distributed TF job.
 
@@ -191,6 +191,7 @@ Notes: (In addition to standalone TF spec)
 - For distributed Tensorflow launch spec, `master`, `worker`, `ps` components are mandatory.
 - Different value of `num_of_containers` can be specified for `worker` and `ps`.
 - `TF_CONFIG` will be automatically generated and insert to spec to launch the job to do distributed training, you don't need to worry about this. 
+- (Very important) `--distributed` must be specified when run distributed tensorflow training.
 
 ### Addition information about writing Yarnfile
 
@@ -226,9 +227,8 @@ User can use `--docker_image` to overwrite whatever defined in the input job spe
 
 #### Launch Command
 ```
-python submit_tf_job.py -remote_conf_path hdfs:///tf-job-conf -input_spec example_tf_job_spec.json --docker_image gpu.cuda_8.0.tf_1.3.0 --job_name distributed-tf-cpu --user tf-user --domain tensorflow.site --gpu 1 --distributed --kerberos --submit
+python submit_tf_job.py -remote_conf_path hdfs:///tf-job-conf -input_spec example_tf_job_spec.json --docker_image gpu.cuda_8.0.tf_1.3.0 --job_name distributed-tf-gpu --user tf-user --domain tensorflow.site --distributed --kerberos
 ```
 
 - `docker_image` file could be found under `tensorflow/dockerfile/with-models/ubuntu-16.04/Dockerfile.gpu.cuda_8.0.tf_1.3.0` from Hadoop codebase and we assume docker image is created named as `gpu.cuda_8.0.tf_1.3.0` from this file.
 - `input_spec` file could be found under `tensorflow/scripts/example_tf_job_spec.json` from Hadoop codebase and make the necessary edits as needed.
-- `--submit` is an optional parameter which helps to submit this Tensorflow job directly to YARN provided this command is fired from a Hadoop cluster node.
