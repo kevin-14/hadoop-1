@@ -10,7 +10,7 @@
         "cpus": 1,
         "memory": "4096"
       },
-      "launch_command": "cd /test/models/tutorials/image/cifar10_estimator && python cifar10_main.py --data-dir=hdfs://default/tmp/cifar-10-data --job-dir=hdfs://default/tmp/cifar-10-jobdir --train-steps=10000 --eval-batch-size=16 --train-batch-size=16 --sync",
+      "launch_command": "cd /test/models/tutorials/image/cifar10_estimator && python cifar10_main.py --data-dir=hdfs://default/tmp/cifar-10-data --job-dir=hdfs://default/tmp/cifar-10-jobdir --train-steps=10000 --eval-batch-size=16 --train-batch-size=16 --sync --num-gpus=0",
       "number_of_containers": 1
     },
     {
@@ -20,7 +20,7 @@
         "cpus": 1,
         "memory": "4096"
       },
-      "launch_command": "cd /test/models/tutorials/image/cifar10_estimator && python cifar10_main.py --data-dir=hdfs://default/tmp/cifar-10-data --job-dir=hdfs://default/tmp/cifar-10-jobdir --train-steps=10000 --eval-batch-size=16 --train-batch-size=16 --sync",
+      "launch_command": "cd /test/models/tutorials/image/cifar10_estimator && python cifar10_main.py --data-dir=hdfs://default/tmp/cifar-10-data --job-dir=hdfs://default/tmp/cifar-10-jobdir --train-steps=10000 --eval-batch-size=16 --train-batch-size=16 --sync --num-gpus=0",
       "number_of_containers": 1
     },
     {
@@ -30,7 +30,7 @@
         "cpus": 1,
         "memory": "2048"
       },
-      "launch_command": "cd /test/models/tutorials/image/cifar10_estimator && python cifar10_main.py --data-dir=hdfs://default/tmp/cifar-10-data --job-dir=hdfs://default/tmp/cifar-10-jobdir",
+      "launch_command": "cd /test/models/tutorials/image/cifar10_estimator && python cifar10_main.py --data-dir=hdfs://default/tmp/cifar-10-data --job-dir=hdfs://default/tmp/cifar-10-jobdir --num-gpus=0",
       "number_of_containers": 1
     }
   ],
@@ -40,7 +40,7 @@
     }
   },
   "kerberos_principal" : {
-    "principal_name" : "ambari-qa@EXAMPLE.COM",
+    "principal_name" : "ambari-qa-yclouddev@EXAMPLE.COM",
     "keytab" : "file:///etc/security/keytabs/smokeuser.headless.keytab"
   }
 }

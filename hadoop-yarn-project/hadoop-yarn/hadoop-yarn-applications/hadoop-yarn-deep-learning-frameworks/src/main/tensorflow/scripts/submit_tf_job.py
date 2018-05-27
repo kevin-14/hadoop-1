@@ -16,10 +16,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Usage and Assumptions:
-# presetup-tf.sh uploaded to hdfs under $remote_conf_path
-
 import argparse
+import time
 import json
 import os
 
@@ -98,10 +96,12 @@ if __name__ == "__main__":
         description='Submit Tensorflow job to YARN.')
 
     # Required positional argument
-    parser.add_argument('-remote_conf_path', type=str,
-                        help='Remote Configuration path to run TF job',
+    parser.add_argument('--remote_conf_path', type=str,
+                        help='Remote Configuration path to run TF job'
+                             ' should include core-site.xml/hdfs-site.xml'
+                             '/presetup-tf.sh, etc.',
                         required=True)
-    parser.add_argument('-input_spec', type=str,
+    parser.add_argument('--input_spec', type=str,
                         help='Yarnfile specification for TF job.',
                         required=True)
     parser.add_argument('--docker_image', type=str,
@@ -110,18 +110,15 @@ if __name__ == "__main__":
                         help='Environment variables needed for TF job in'
                              ' key=value format.',
                         required=False)
-    parser.add_argument('--submit', action='store_true',
-                        help='Automatically submit TF job to YARN, if this is '
-                             'not specified. New generated spec will be printed '
-                             'to <stdout>, and user can use yarn app -launch '
-                             '<path/to/spec> to launch it later.')
+    parser.add_argument('--dry_run', action='store_true',
+                        help='When this is not specified (default behavior), '
+                             'YARN service will be automatically submited. '
+                             'When this is not specified, generated YARN service'
+                             ' spec will be printed to stdout')
     parser.add_argument('--job_name', type=str,
                         help='Specify job name of the Tensorflow job, which '
                              'will overwrite the one specified in input spec '
                              'file',
-                        required=False)
-    parser.add_argument('--gpu', type=str, default=0,
-                        help='Specify number of GPUs needed per component.',
                         required=False)
     parser.add_argument('--user', type=str,
                         help='Specify user name if it is different from $USER '
@@ -144,7 +141,7 @@ if __name__ == "__main__":
 
     remote_path = args.remote_conf_path
     input_json_spec = args.input_spec
-    submit_to_yarn = args.submit
+    do_dry_run = args.dry_run
     envs_array = []
     if hasattr(args, 'env'):
         envs = args.env
@@ -164,17 +161,13 @@ if __name__ == "__main__":
     if hasattr(args, 'docker_image'):
         docker_image = args.docker_image
     kerberos = args.kerberos
-    num_gpu = -1
-    if hasattr(args, 'gpu'):
-        num_gpu = int(args.gpu)
 
     # Only print when verbose
     if verbose:
         print "remote_path=", remote_path
         print "input_spec_file=", input_json_spec
-        print "submit=", submit_to_yarn
+        print "do_dry_run=", do_dry_run
         print "user=", user
-        print "gpu=", num_gpu
 
     with open(input_json_spec) as json_file:
         data = json_file.read()
@@ -186,8 +179,7 @@ if __name__ == "__main__":
     # Updating per-component commands with presetup-tf.sh
     for component in tf_json['components']:
         # Append presetup-tf.sh to launch command
-        launch_cmd = '. resources/presetup-tf.sh && ' + component['launch_command'] \
-                    + ' --num-gpus=' + `num_gpu`
+        launch_cmd = '. resources/presetup-tf.sh && ' + component['launch_command'] 
         component['launch_command'] = launch_cmd
 
         if verbose:
@@ -201,10 +193,6 @@ if __name__ == "__main__":
             if verbose:
                 print "Using docker image=", docker_image
 
-        if num_gpu > 0:
-            component['resource']['additional'] = {}
-            component['resource']['additional']['yarn.io/gpu'] = {}
-            component['resource']['additional']['yarn.io/gpu']['value'] = num_gpu
         artifact = component.get('artifact')
         if artifact is None or artifact.get('id') is None:
             raise Exception("Docker image for components doesn't set, please"
@@ -223,9 +211,9 @@ if __name__ == "__main__":
         docker_mounts = spec_envs['YARN_CONTAINER_RUNTIME_DOCKER_MOUNTS']
 
     srcfiles, destfiles = [], []
-    srcfiles.append(remote_path + '/configs/core-site.xml')
-    srcfiles.append(remote_path + '/configs/hdfs-site.xml')
-    srcfiles.append(remote_path + '/configs/presetup-tf.sh')
+    srcfiles.append(remote_path + '/core-site.xml')
+    srcfiles.append(remote_path + '/hdfs-site.xml')
+    srcfiles.append(remote_path + '/presetup-tf.sh')
     destfiles.append("core-site.xml")
     destfiles.append("hdfs-site.xml")
     destfiles.append("presetup-tf.sh")
@@ -237,7 +225,7 @@ if __name__ == "__main__":
                     "resources/hdfs-site.xml:/etc/hadoop/conf/hdfs-site.xml:ro"
 
     if kerberos:
-        srcfiles.append(remote_path + '/configs/krb5.conf')
+        srcfiles.append(remote_path + '/krb5.conf')
         destfiles.append('krb5.conf')
         docker_mounts = docker_mounts + ",resources/krb5.conf:/etc/krb5.conf:ro"
 
@@ -256,10 +244,21 @@ if __name__ == "__main__":
         key_value = env.split('=')
         tf_json['configuration']['env'][key_value[0]] = key_value[1]
 
+    jstr = json.dumps(tf_json, sort_keys=False, indent=2)
+
+    print ("============= Begin of generated YARN file ==============")
+    print(jstr)
+    print ("=============   End of generated YARN file ==============")
+
     # submit to YARN
-    if submit_to_yarn:
-        # todo
-        print("Submit job to YARN.")
+    if do_dry_run:
+        print("Skip submit job to YARN.")
     else:
-        jstr = json.dumps(tf_json, sort_keys=False, indent=2)
-        print(jstr)
+        print("Submiting job to YARN.")
+        filename = "/tmp/tensor-flow-yarn-spec-" + user + "-" + str(time.time()) + ".json"
+        f = open(filename, "w")
+        f.write(jstr)
+        f.close()
+        cmd = "yarn app -launch " + job_name + " " + filename
+        print("Executing '" + cmd + "'")
+        os.system("yarn app -launch " + job_name + " " + filename)
