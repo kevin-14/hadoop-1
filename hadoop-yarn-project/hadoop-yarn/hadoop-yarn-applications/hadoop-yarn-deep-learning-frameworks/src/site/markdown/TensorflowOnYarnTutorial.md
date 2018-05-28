@@ -18,6 +18,8 @@
 
 ## Prepare data for training
 
+CIFAR-10 is a common benchmark in machine learning for image recognition. Below example is based on CIFAR-10 dataset.
+
 1) Checkout https://github.com/tensorflow/models/:
 ```
 git clone https://github.com/tensorflow/models/
@@ -43,25 +45,27 @@ a. All following examples are using ```/tmp/cifar-10-jobdir``` as snapshot direc
 ```
 hadoop fs -rmr /tmp/cifar-10-jobdir
 ```
-To cleanup snapshot between runs. 
+to cleanup snapshot between runs. 
 
 b. YARN service doesn't allow multiple services with the same name, so please run following command
 ```
 yarn application -destroy <service-name> 
 ```
-To delete services if you want to reuse the same service name.
+to delete services if you want to reuse the same service name.
 
 ## Run Tensorflow jobs 
 
 ### Use auto generated Yarnfile and run job
 
-With the help to custom python scripts, user can run Tensorflow jobs easily by auto creating Yarnfile.
+With the help of custom python scripts, user can run Tensorflow jobs easily by auto creating Yarnfile.
 
-Please refer to [Run Tensorflow Job Using Helper Script](RunTensorflowJobUsingHelperScript.md) for more details.
+Please refer to [Run Tensorflow Job Using Helper Script](RunTensorflowJobUsingHelperScript.html) for more details.
 
 ### Use raw YARN service spec to run job
 
-Please refer to [Run Tensorflow Job Using Raw Spec](RunTensorflowJobUsingNativeServiceSpec.html) for more details. This is useful if you want to understand things happen behind-the-scene. But this is not recommended for end-user to use. 
+This is useful if you want to understand things happening behind-the-scene. But this is not recommended for end-user to use.
+
+Please refer to [Run Tensorflow Job Using Raw Native Service Spec](RunTensorflowJobUsingNativeServiceSpec.html) for more details. 
 
 ## Outputs
 

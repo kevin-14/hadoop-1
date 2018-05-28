@@ -112,8 +112,8 @@ if __name__ == "__main__":
                         required=False)
     parser.add_argument('--dry_run', action='store_true',
                         help='When this is not specified (default behavior), '
-                             'YARN service will be automatically submited. '
-                             'When this is not specified, generated YARN service'
+                             'YARN service will be automatically submitted. '
+                             'When this is specified, generated YARN service'
                              ' spec will be printed to stdout')
     parser.add_argument('--job_name', type=str,
                         help='Specify job name of the Tensorflow job, which '
@@ -130,7 +130,7 @@ if __name__ == "__main__":
                              ', required for distributed Tensorflow',
                         required=False)
     parser.add_argument('--distributed', action='store_true',
-                        help='Running distributed tensorflow, if this is '
+                        help='Running distributed Tensorflow, if this is '
                              'specified, worker/ps/master must be included '
                              'inside input spec')
     parser.add_argument('--kerberos', action='store_true',
@@ -254,7 +254,7 @@ if __name__ == "__main__":
     if do_dry_run:
         print("Skip submit job to YARN.")
     else:
-        print("Submiting job to YARN.")
+        print("Submitting job to YARN.")
         filename = "/tmp/tensor-flow-yarn-spec-" + user + "-" + str(time.time()) + ".json"
         f = open(filename, "w")
         f.write(jstr)

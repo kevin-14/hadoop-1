@@ -181,7 +181,7 @@
 
     <menu name="Deep learning Frameworks on YARN" inherit="top">
       <item name="Overview" href="hadoop-yarn/hadoop-yarn-applications/hadoop-yarn-deep-learning-frameworks/Overview.html"/>
-      <item name="Tutorial: Tensorflow on YARN" href="hadoop-yarn/hadoop-yarn-applications/hadoop-yarn-deep-learning-frameworks/TensorflowOnYarn.html"/>
+      <item name="Tutorial: Tensorflow on YARN" href="hadoop-yarn/hadoop-yarn-applications/hadoop-yarn-deep-learning-frameworks/TensorflowOnYarnTutorial.html"/>
     </menu>
 
     <menu name="Hadoop Compatible File Systems" inherit="top">

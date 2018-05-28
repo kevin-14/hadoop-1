@@ -18,17 +18,18 @@
 # Run Tensorflow Jobs Using Helper Script
 
 ## Prerequisites
-1) Sufficient permissions (authorization and authentication, like `kinit`) are needed for the user (in case of secure cluster) to run `submit_tf_job.py` script as it could also support submitting Tensorflow service directly to YARN.
+1) Sufficient permissions (authorization and authentication, like `kinit`) are needed for the user (in case of secure cluster) to run `submit_tf_job.py` script as it also supports submitting Tensorflow service directly to YARN.
 
-2) User could be use `--input_spec` argument to specify a sample spec file as a template. This package has `example_tf_job_spec.json` sample spec file and user could edit this file to specify resources per component and kerberos specification if needed. 
+2) User could be use `--input_spec` argument to specify a sample spec file as a template. This package has `example_tf_job_spec.json` sample spec file and user could edit this file to specify resources per component (such as memory, cpu, gpu etc) and kerberos specification if needed. 
 
 ## Setup presetup_tf.sh template
 1) Rename `presetup_tf.sh_template` to `presetup_tf.sh`
 
 2) In `presetup_tf.sh`
 
-    * Update valid `HADOOP_HDFS_HOME`. This should point to `HADOOP_HDFS_HOME` **inside the docker image**.
-    * Update `JAVA_HOME` as per the environment setup. This should point to `JAVA_HOME` **inside the docker image**.
+    - Update valid `HADOOP_HDFS_HOME`. This should point to `HADOOP_HDFS_HOME` **inside the docker image**.
+
+    - Update `JAVA_HOME` as per the environment setup. This should point to `JAVA_HOME` **inside the docker image**.
 
 3) Place `presetup-tf.sh` in HDFS under `hdfs://host:port/<tf-job-conf-path>/`.
 
@@ -41,6 +42,7 @@
 ## Run `submit_tf_job.py` to submit Tensorflow job to YARN
 
 User could run below command to submit Tensorflow job to YARN or to generate valid Yarnfile for the job.
+
 `python submit_tf_job.py --remote_conf_path <tf-job-conf-path> --input_spec <INPUT_SPEC> --docker_image <DOCKER_IMAGE> --env <ENV> --job_name <JOB_NAME> --user <USER> --domain <DOMAIN> --distributed --kerberos`
 
 Detailed argument summary for `submit_tf_job.py` command.
@@ -59,7 +61,7 @@ optional arguments:
                         format.
   --dry_run             When this is not specified (default behavior), YARN
                         service will be automatically submited. When this is
-                        not specified, generated YARN service spec will be
+                        specified, generated YARN service spec will be
                         printed to stdout
   --job_name JOB_NAME   Specify job name of the Tensorflow job, which will
                         overwrite the one specified in input spec file
@@ -109,15 +111,16 @@ Example:
     }
   },
   "kerberos_principal" : {
-    "principal_name" : "ambari-qa@EXAMPLE.COM",
-    "keytab" : "file:///etc/security/keytabs/smokeuser.headless.keytab"
+    "principal_name" : "test-user@EXAMPLE.COM",
+    "keytab" : "file:///etc/security/keytabs/test-user.headless.keytab"
   }
 }
 
 ```
 
 Notes:
-- `hdfs://host:port/<tf-job-conf-path>/presetup-tf.sh` will be automatically download and mount to the docker container, it will be executed before invoking `launch_command` of components specified in the spec.
+
+- `hdfs://host:port/<tf-job-conf-path>/presetup-tf.sh` will be automatically downloaded and mounted to the docker container, it will be executed before invoking `launch_command` of components specified in the spec.
 - Component name can be customized (In above example it uses `worker`)
 - In `resource` section, you can specify cpu/memory/gpu if you needed.
 - Additional environment variables can be specified under `env`. This will be passed to launched docker container process.
@@ -181,13 +184,14 @@ Notes:
     }
   },
   "kerberos_principal" : {
-    "principal_name" : "ambari-qa@EXAMPLE.COM",
-    "keytab" : "file:///etc/security/keytabs/smokeuser.headless.keytab"
+    "principal_name" : "test-user@EXAMPLE.COM",
+    "keytab" : "file:///etc/security/keytabs/test-user.headless.keytab"
   }
 }
 ```
 
 Notes: (In addition to standalone TF spec)
+
 - For distributed Tensorflow launch spec, `master`, `worker`, `ps` components are mandatory.
 - Different value of `num_of_containers` can be specified for `worker` and `ps`.
 - `TF_CONFIG` will be automatically generated and insert to spec to launch the job to do distributed training, you don't need to worry about this. 
@@ -219,7 +223,8 @@ User can use `--docker_image` to overwrite whatever defined in the input job spe
 ## General Guidelines
 
 1) For many env configurations, extra escape characters are used so that native service could export correct env's as per guideline. An improvement to this is ongoing in YARN-8257. 
-2) In secure clusters, user need to ensure that app is launched from a secure shell. (e.g. with proper Kerberos token inited).
+
+2) In secure clusters, user need to ensure that app is launched from a secure shell. (e.g. with proper Kerberos token).
 
 ## End-to-end example: 
 

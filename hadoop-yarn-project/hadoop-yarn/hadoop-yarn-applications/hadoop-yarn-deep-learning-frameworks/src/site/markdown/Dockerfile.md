@@ -22,12 +22,17 @@
 Dockerfile to run Tensorflow on YARN need two part: 
 
 **Base libraries which Tensorflow depends on**
+
 1) OS base image, for example ```ubuntu:16.04```
+
 2) Tensorflow depended libraries and packages. For example ```python```, ```scipy```. For GPU support, need ```cuda```, ```cudnn```, etc.
+
 3) Tensorflow package.
 
 **Libraries to access HDFS**
+
 1) JDK
+
 2) Hadoop
 
 Here's an example of a base image (w/o GPU support) to install Tensorflow:

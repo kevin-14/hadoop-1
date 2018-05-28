@@ -40,7 +40,7 @@
     }
   },
   "kerberos_principal" : {
-    "principal_name" : "ambari-qa-yclouddev@EXAMPLE.COM",
-    "keytab" : "file:///etc/security/keytabs/smokeuser.headless.keytab"
+    "principal_name" : "test-user@EXAMPLE.COM",
+    "keytab" : "file:///etc/security/keytabs/test-user.headless.keytab"
   }
 }

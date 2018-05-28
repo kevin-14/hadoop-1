@@ -18,6 +18,7 @@
 # Deep Learning Frameworks Running on YARN
 
 ## Contents
+Yarn Service framework provides first class support to host long running services natively in YARN. This provides an easier way for users to run Deep Learning workloads on top of YARN. This document summarizes steps and utilities available in YARN to ease the complexities in running Machine Learning workloads. Few such supported Deep Learning frameworks are as follows: 
 
 ### Running Tensorflow on YARN
   * [Tutorials: Running Tensorflow on YARN](TensorflowOnYarnTutorial.html)
