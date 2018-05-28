@@ -59,7 +59,7 @@ to delete services if you want to reuse the same service name.
 
 With the help of custom python scripts, user can run Tensorflow jobs easily by auto creating Yarnfile.
 
-Please refer to [Run Tensorflow Job Using Helper Script](RunTensorflowJobUsingHelperScript.html) for more details.
+Please refer to [Run Tensorflow Job Using Helper Script](RunTensorflowJobUsingHelperScript.html) for more details. This is also recommended approach.
 
 ### Use raw YARN service spec to run job
 

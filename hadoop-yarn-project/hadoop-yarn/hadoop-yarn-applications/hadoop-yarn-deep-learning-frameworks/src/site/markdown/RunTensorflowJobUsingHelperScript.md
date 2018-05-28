@@ -77,7 +77,7 @@ optional arguments:
 ```
 
 Example:
-`python submit_tf_job.py --input_spec example_tf_job_spec.json --docker_image tf-gpu:ubuntu-xyz --job_name distributed-tf --user ambari-qa --domain <your_domain_name>.com --remote_conf_path hdfs:///tf-job-conf/configs --distributed`
+`python submit_tf_job.py --input_spec example_tf_job_spec.json --docker_image tf-gpu:ubuntu-xyz --job_name distributed-tf --user ambari-qa --domain <your_domain_name> --remote_conf_path hdfs:///tf-job-conf/configs --distributed`
 
 ## Provide `input-spec` file to run Tensorflow jobs
 
