@@ -74,7 +74,7 @@ RUN pip --no-cache-dir install \
     python -m ipykernel.kernelspec
 
 RUN pip --no-cache-dir install \
-    http://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.3.0-cp27-none-linux_x86_64.whl
+    http://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.8.0-cp27-none-linux_x86_64.whl
 ```
 
 On top of above image, add files, install packages to access HDFS
@@ -89,8 +89,17 @@ Build and push to your own docker registry: Use ```docker build ... ``` and ```d
 ## Use examples to build your own Tensorflow docker images
 
 We provided following examples for you to build tensorflow docker images.
+
+For Tensorflow 1.3.0 (Precompiled to CUDA 8.x)
  
 - *base/ubuntu-16.04/Dockerfile.cpu.tf_1.3.0*: Tensorflow 1.3.0 supports CPU only.
 - *with-models/ubuntu-16.04/Dockerfile.cpu.tf_1.3.0*: Tensorflow 1.3.0 supports CPU only, and included models
 - *base/ubuntu-16.04/Dockerfile.gpu.cuda_8.0.tf_1.3.0*: Tensorflow 1.3.0 supports GPU, which is prebuilt to CUDA8.
 - *with-models/ubuntu-16.04/Dockerfile.gpu.cuda_8.0.tf_1.3.0*: Tensorflow 1.3.0 supports GPU, which is prebuilt to CUDA8, with models.
+
+For Tensorflow 1.8.0 (Precompiled to CUDA 9.x)
+ 
+- *base/ubuntu-16.04/Dockerfile.cpu.tf_1.8.0*: Tensorflow 1.8.0 supports CPU only.
+- *with-models/ubuntu-16.04/Dockerfile.cpu.tf_1.8.0*: Tensorflow 1.8.0 supports CPU only, and included models
+- *base/ubuntu-16.04/Dockerfile.gpu.cuda_9.0.tf_1.8.0*: Tensorflow 1.8.0 supports GPU, which is prebuilt to CUDA9.
+- *with-models/ubuntu-16.04/Dockerfile.gpu.cuda_8.0.tf_1.8.0*: Tensorflow 1.8.0 supports GPU, which is prebuilt to CUDA9, with models.

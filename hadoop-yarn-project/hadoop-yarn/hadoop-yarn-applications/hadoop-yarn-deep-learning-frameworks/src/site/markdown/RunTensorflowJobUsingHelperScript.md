@@ -232,8 +232,8 @@ User can use `--docker_image` to overwrite whatever defined in the input job spe
 
 #### Launch Command
 ```
-python submit_tf_job.py -remote_conf_path hdfs:///tf-job-conf -input_spec example_tf_job_spec.json --docker_image gpu.cuda_8.0.tf_1.3.0 --job_name distributed-tf-gpu --user tf-user --domain tensorflow.site --distributed --kerberos
+python submit_tf_job.py -remote_conf_path hdfs:///tf-job-conf -input_spec example_tf_job_spec.json --docker_image gpu.cuda_9.0.tf_1.8.0 --job_name distributed-tf-gpu --user tf-user --domain tensorflow.site --distributed --kerberos
 ```
 
-- `docker_image` file could be found under `tensorflow/dockerfile/with-models/ubuntu-16.04/Dockerfile.gpu.cuda_8.0.tf_1.3.0` from Hadoop codebase and we assume docker image is created named as `gpu.cuda_8.0.tf_1.3.0` from this file.
+- `docker_image` file could be found under `tensorflow/dockerfile/with-models/ubuntu-16.04/Dockerfile.gpu.cuda_9.0.tf_1.8.0` from Hadoop codebase and we assume docker image is created named as `gpu.cuda_9.0.tf_1.8.0` from this file.
 - `input_spec` file could be found under `tensorflow/scripts/example_tf_job_spec.json` from Hadoop codebase and make the necessary edits as needed.
