@@ -22,10 +22,10 @@
 
 2) User could be use `--input_spec` argument to specify a sample spec file as a template. This package has `example_tf_job_spec.json` sample spec file and user could edit this file to specify resources per component (such as memory, cpu, gpu etc) and kerberos specification if needed. 
 
-## Setup presetup_tf.sh template
-1) Rename `presetup_tf.sh_template` to `presetup_tf.sh`
+## Setup presetup-tf.sh template
+1) Rename `presetup-tf.sh_template` to `presetup-tf.sh`
 
-2) In `presetup_tf.sh`
+2) In `presetup-tf.sh`
 
     - Update valid `HADOOP_HDFS_HOME`. This should point to `HADOOP_HDFS_HOME` **inside the docker image**.
 
@@ -52,7 +52,7 @@ optional arguments:
   -h, --help            show this help message and exit
   --remote_conf_path REMOTE_CONF_PATH
                         Remote Configuration path to run TF job should include
-                        core-site.xml/hdfs-site.xml/presetup-tf.sh, etc.
+                        core-site.xml/hdfs-site.xml/presetuptf.sh, etc.
   --input_spec INPUT_SPEC
                         Yarnfile specification for TF job.
   --docker_image DOCKER_IMAGE
@@ -232,7 +232,7 @@ User can use `--docker_image` to overwrite whatever defined in the input job spe
 
 #### Launch Command
 ```
-python submit_tf_job.py -remote_conf_path hdfs:///tf-job-conf -input_spec example_tf_job_spec.json --docker_image gpu.cuda_9.0.tf_1.8.0 --job_name distributed-tf-gpu --user tf-user --domain tensorflow.site --distributed --kerberos
+python submit_tf_job.py --remote_conf_path hdfs:///tf-job-conf --input_spec example_tf_job_spec.json --docker_image gpu.cuda_9.0.tf_1.8.0 --job_name distributed-tf-gpu --user tf-user --domain tensorflow.site --distributed --kerberos
 ```
 
 - `docker_image` file could be found under `tensorflow/dockerfile/with-models/ubuntu-16.04/Dockerfile.gpu.cuda_9.0.tf_1.8.0` from Hadoop codebase and we assume docker image is created named as `gpu.cuda_9.0.tf_1.8.0` from this file.
