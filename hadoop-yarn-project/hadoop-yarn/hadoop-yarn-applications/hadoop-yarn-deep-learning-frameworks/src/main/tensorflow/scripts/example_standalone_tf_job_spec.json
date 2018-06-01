@@ -8,9 +8,14 @@
       "dependencies": [],
       "resource": {
         "cpus": 1,
-        "memory": "4096"
+        "memory": "4096",
+        "additional" : {
+          "yarn.io/gpu" : {
+            "value" : 1
+          }
+        }
       },
-      "launch_command": "cd /test/models/tutorials/image/cifar10_estimator && python cifar10_main.py --data-dir=hdfs://default/tmp/cifar-10-data --job-dir=hdfs://default/tmp/cifar-10-jobdir --train-steps=10000 --eval-batch-size=16 --train-batch-size=16 --sync --num-gpus=0",
+      "launch_command": "cd /test/models/tutorials/image/cifar10_estimator && python cifar10_main.py --data-dir=hdfs://default/tmp/cifar-10-data --job-dir=hdfs://default/tmp/cifar-10-jobdir --train-steps=10000 --eval-batch-size=16 --train-batch-size=16 --num-gpus=1",
       "number_of_containers": 1
     }
   ],
